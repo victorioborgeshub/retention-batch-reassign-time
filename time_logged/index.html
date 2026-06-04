@@ -1,0 +1,2395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hubstaff — Edit &amp; approve</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&family=Roboto:wght@200;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css">
+  <!-- ── Highlight changes ── -->
+  <style id="highlight-changes-css">
+/* Toggle component (shared with other toggles — safe to duplicate) */
+.silent-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 0;
+}
+.silent-toggle__track {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--gray-300, #D1D5DB);
+  padding: 2px;
+  flex-shrink: 0;
+  transition: background 150ms ease;
+}
+.silent-toggle.is-on .silent-toggle__track {
+  background: var(--primary-500, #2563EB);
+}
+.silent-toggle__thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  transition: transform 150ms ease;
+}
+.silent-toggle.is-on .silent-toggle__thumb {
+  transform: translateX(16px);
+}
+.silent-toggle__label {
+  font-size: 13px;
+  color: var(--gray-600, #4B5563);
+  white-space: nowrap;
+}
+.silent-toggle:focus-visible {
+  outline: 2px solid var(--primary-500, #2563EB);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.hs-topbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--gray-200, #E5E7EB);
+  flex-shrink: 0;
+}
+/* Highlight mode */
+.highlight-mode [data-change] {
+  outline: 3px solid #FCD34D;
+  outline-offset: 3px;
+  border-radius: 6px;
+  cursor: help;
+}
+.highlight-tooltip {
+  position: fixed;
+  z-index: 2000;
+  background: var(--gray-900, #111827);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.55;
+  padding: 8px 12px;
+  border-radius: 6px;
+  max-width: 260px;
+  pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.22);
+}
+.highlight-tooltip[hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+
+<div id="shell-content">
+
+<!-- ─── PAGE HEADER ──────────────────────────────────────── -->
+<div class="page-header">
+
+  <!-- Title + actions -->
+  <div class="page-title-row">
+    <h1 class="page-title">Edit &amp; approve</h1>
+    <div class="page-actions">
+      <button class="btn btn-primary btn-32">
+        <span class="ms" style="font-size:16px">add</span>Add time
+      </button>
+      <button class="btn-icon btn-icon-32" data-tooltip="Export">
+        <span class="ms" style="font-size:16px">download</span>
+      </button>
+      <button class="btn-icon btn-icon-32" data-tooltip="Settings">
+        <span class="ms" style="font-size:16px">settings</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters row -->
+  <div class="filter-row">
+    <div class="filter-left">
+
+      <!-- Teams dropdown -->
+      <div class="dropdown" data-dropdown="tl-teams" style="min-width:180px;">
+        <button class="select-shell" type="button" data-trigger aria-haspopup="dialog" aria-expanded="false">
+          <span class="select-value" data-label>All teams</span>
+          <span class="select-icon">keyboard_arrow_down</span>
+        </button>
+        <div class="dropdown-panel" role="dialog" data-panel>
+          <div class="dropdown-search">
+            <span class="dropdown-search-icon">search</span>
+            <input class="dropdown-search-input" type="text" placeholder="Search..." autocomplete="off">
+            <button class="dropdown-search-clear" type="button" tabindex="-1">close</button>
+          </div>
+          <div class="list" data-list="tl-teams"></div>
+        </div>
+      </div>
+
+      <!-- Members dropdown -->
+      <div class="dropdown" data-dropdown="tl-members" style="min-width:180px;">
+        <button class="select-shell" type="button" data-trigger aria-haspopup="dialog" aria-expanded="false">
+          <span class="select-value" data-label>All members</span>
+          <span class="select-icon">keyboard_arrow_down</span>
+        </button>
+        <div class="dropdown-panel" role="dialog" data-panel>
+          <div class="dropdown-search">
+            <span class="dropdown-search-icon">search</span>
+            <input class="dropdown-search-input" type="text" placeholder="Search..." autocomplete="off">
+            <button class="dropdown-search-clear" type="button" tabindex="-1">close</button>
+          </div>
+          <div class="list" data-list="tl-members"></div>
+        </div>
+      </div>
+
+      <button class="btn-filters" data-change="New — opens the Filters drawer with Project, To-do, and Activity Level selectors. Active filters update both the visible time entries in expanded rows and the daily totals.">
+        <span class="ms">filter_list</span>Filters
+      </button>
+    </div>
+
+    <div class="filter-right">
+      <button id="tl-date-prev" class="btn-icon btn-icon-40" data-tooltip="Previous period"><span class="ms" style="font-size:20px;">chevron_left</span></button>
+      <button id="tl-date-next" class="btn-icon btn-icon-40" data-tooltip="Next period"><span class="ms" style="font-size:20px;">chevron_right</span></button>
+
+      <!-- Date range dropdown -->
+      <div class="dropdown" data-dropdown="tl-date">
+        <button class="select-shell" type="button" data-trigger aria-haspopup="dialog" aria-expanded="false" style="gap:8px;padding:0 10px 0 12px;">
+          <span class="select-icon cal-icon" style="font-size:18px;">calendar_month</span>
+          <span class="select-value" data-label>Nov 5 – Nov 6, 2025</span>
+          <span class="select-icon">keyboard_arrow_down</span>
+        </button>
+        <div class="dropdown-panel panel-right" role="dialog" data-panel style="width:260px;">
+          <div class="dropdown-panel-header">
+            <div class="panel-title" data-tl-cal-title></div>
+            <div class="panel-actions">
+              <button class="panel-icon-btn" type="button" data-tl-cal-prev>chevron_left</button>
+              <button class="panel-icon-btn" type="button" data-tl-cal-next>chevron_right</button>
+            </div>
+          </div>
+          <div class="calendar">
+            <div class="calendar-grid">
+              <div class="calendar-dow">S</div><div class="calendar-dow">M</div>
+              <div class="calendar-dow">T</div><div class="calendar-dow">W</div>
+              <div class="calendar-dow">T</div><div class="calendar-dow">F</div>
+              <div class="calendar-dow">S</div>
+            </div>
+            <div class="calendar-grid" data-tl-cal-grid></div>
+          </div>
+          <div class="panel-footer">
+            <button class="mini-btn" type="button" data-tl-cal-clear>Clear</button>
+            <button class="mini-btn primary" type="button" data-tl-cal-apply>Apply</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tz-selector">
+        UTC<span class="ms" style="font-size:14px;">expand_more</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs-row">
+    <div class="tab is-active">Time Logged</div>
+    <div class="tab">Timesheets</div>
+  </div>
+
+</div>
+
+<!-- ─── PAGE BODY ─────────────────────────────────────────── -->
+<div class="page-body">
+
+  <div class="main-card">
+
+  <!-- Section toolbar: "Daily time logged" -->
+  <div class="section-toolbar">
+    <span class="section-title">Daily time logged</span>
+    <div class="section-controls">
+      <div class="segmented">
+        <button class="seg-btn is-active">Daily</button>
+        <button class="seg-btn">Weekly</button>
+      </div>
+      <button class="btn-icon btn-icon-32" data-tooltip="Show/hide columns"><span class="ms" style="font-size:18px;">view_column</span></button>
+      <button id="btn-fold-all" class="btn-icon btn-icon-32" data-tooltip="Collapse days"><span class="ms" style="font-size:18px;">unfold_less</span></button>
+    </div>
+  </div>
+
+  <div id="day-groups-container"></div>
+
+  </div><!-- /main-card -->
+
+</div><!-- /page-body -->
+
+<!-- ─── BATCH ACTION BAR ────────────────────────────────── -->
+<div id="batch-bar">
+  <span class="bar-summary" id="bar-summary"></span>
+  <div class="bar-divider"></div>
+  <button class="bar-btn bar-btn-reassign" id="bar-reassign-btn" type="button">Reassign time</button>
+  <button class="bar-btn bar-btn-delete" id="bar-delete-btn" type="button">Delete</button>
+  <div class="bar-divider"></div>
+  <button class="bar-close" id="bar-close-btn" type="button"><span class="ms">close</span></button>
+</div>
+
+<!-- ─── DRAWER OVERLAY ──────────────────────────────────────── -->
+<div id="drawer-overlay" class="drawer-overlay"></div>
+
+<!-- ─── FILTERS DRAWER ─────────────────────────────────────── -->
+<div id="filters-drawer" class="filters-drawer">
+
+  <!-- Header -->
+  <div class="drawer-header">
+    <h3 class="drawer-title">Filters</h3>
+    <button class="btn-icon btn-icon-32" id="drawer-close-btn" type="button" data-tooltip="Close">
+      <span class="ms" style="font-size:18px;">close</span>
+    </button>
+  </div>
+
+  <!-- Scrollable body -->
+  <div class="drawer-body">
+
+    <!-- Projects / Work Orders -->
+    <div class="drawer-field">
+      <div class="drawer-field-label">Projects / Work orders</div>
+      <div class="dropdown" data-dropdown="dr-projects" style="width:100%;">
+        <button class="select-shell" type="button" data-trigger aria-haspopup="dialog" aria-expanded="false">
+          <span class="select-value muted" data-label>All projects</span>
+          <span class="select-icon">keyboard_arrow_down</span>
+        </button>
+        <div class="dropdown-panel" role="dialog" data-panel style="width:100%;">
+          <div class="dropdown-search">
+            <span class="dropdown-search-icon">search</span>
+            <input class="dropdown-search-input" type="text" placeholder="Search..." autocomplete="off">
+            <button class="dropdown-search-clear" type="button" tabindex="-1">close</button>
+          </div>
+          <div class="list" data-list="dr-projects"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- To-dos / Jobs -->
+    <div class="drawer-field">
+      <div class="drawer-field-label">To-dos / Jobs</div>
+      <div class="dropdown" data-dropdown="dr-todos" style="width:100%;">
+        <button class="select-shell" type="button" data-trigger aria-haspopup="dialog" aria-expanded="false">
+          <span class="select-value muted" data-label>All to-dos</span>
+          <span class="select-icon">keyboard_arrow_down</span>
+        </button>
+        <div class="dropdown-panel" role="dialog" data-panel style="width:100%;">
+          <div class="dropdown-search">
+            <span class="dropdown-search-icon">search</span>
+            <input class="dropdown-search-input" type="text" placeholder="Search..." autocomplete="off">
+            <button class="dropdown-search-clear" type="button" tabindex="-1">close</button>
+          </div>
+          <div class="list" data-list="dr-todos"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity -->
+    <div class="drawer-field">
+      <div class="drawer-field-label">Activity</div>
+      <div class="dropdown" data-dropdown="dr-activity" style="width:100%;">
+        <button class="select-shell" type="button" data-trigger aria-haspopup="dialog" aria-expanded="false">
+          <span class="select-value muted" data-label>All activity</span>
+          <span class="select-icon">keyboard_arrow_down</span>
+        </button>
+        <div class="dropdown-panel" role="dialog" data-panel style="width:100%;">
+          <div class="list" data-list="dr-activity"></div>
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+
+  <!-- Sticky footer -->
+  <div class="drawer-footer">
+    <button class="drawer-clear-btn" type="button">
+      <span class="ms" style="font-size:16px;color:var(--gray-500);">filter_list_off</span>
+      Clear filters
+    </button>
+    <button class="drawer-apply-btn" type="button" id="drawer-apply-btn">
+      Apply
+    </button>
+  </div>
+
+</div>
+
+<script src="assets/data.js"></script>
+<script>
+// ─────────────────────────────────────────────────────
+// DATA
+// ─────────────────────────────────────────────────────
+const TL_MEMBERS = [
+  // Engineering — m1..m60
+  {id:'m1',  name:'Lucas Ferreira',    email:'lucas.ferreira@hubstaff.com',    color:'#e74c3c', initials:'LF'},
+  {id:'m2',  name:'Marina Costa',      email:'marina.costa@hubstaff.com',      color:'#3b82f6', initials:'MC'},
+  {id:'m3',  name:'Rafael Mendes',     email:'rafael.mendes@hubstaff.com',     color:'#10b981', initials:'RM'},
+  {id:'m4',  name:'Priya Nair',        email:'priya.nair@hubstaff.com',        color:'#8b5cf6', initials:'PN'},
+  {id:'m5',  name:'Diego Oliveira',    email:'diego.oliveira@hubstaff.com',    color:'#f59e0b', initials:'DO'},
+  {id:'m6',  name:'Aisha Patel (instant)',  email:'aisha.patel@hubstaff.com',   color:'#ec4899', initials:'AP', scenario:'bg-instant'},
+  {id:'m7',  name:'Connor Walsh (bg)',     email:'connor.walsh@hubstaff.com',  color:'#6366f1', initials:'CW', scenario:'bg-spinner'},
+  {id:'m8',  name:'Yuki Tanaka (bg long)', email:'yuki.tanaka@hubstaff.com',  color:'#14b8a6', initials:'YT', scenario:'bg-long'},
+  {id:'m9',  name:'Fernanda Lima (fail)',  email:'fernanda.lima@hubstaff.com', color:'#f97316', initials:'FL', scenario:'bg-fail'},
+  {id:'m10', name:'Marcus Johnson',    email:'marcus.johnson@hubstaff.com',    color:'#e74c3c', initials:'MJ'},
+  {id:'m11', name:'Sara Chen',         email:'sara.chen@hubstaff.com',         color:'#3b82f6', initials:'SC'},
+  {id:'m12', name:'Ivan Petrov',       email:'ivan.petrov@hubstaff.com',       color:'#10b981', initials:'IP'},
+  {id:'m13', name:'Natalia Vargas',    email:'natalia.vargas@hubstaff.com',    color:'#8b5cf6', initials:'NV'},
+  {id:'m14', name:'James Okafor',      email:'james.okafor@hubstaff.com',      color:'#f59e0b', initials:'JO'},
+  {id:'m15', name:'Emily Rodriguez',   email:'emily.rodriguez@hubstaff.com',   color:'#ec4899', initials:'ER'},
+  {id:'m16', name:'Tomás García',      email:'tomas.garcia@hubstaff.com',      color:'#6366f1', initials:'TG'},
+  {id:'m17', name:'Nina Kimura',       email:'nina.kimura@hubstaff.com',       color:'#14b8a6', initials:'NK'},
+  {id:'m18', name:'David Park',        email:'david.park@hubstaff.com',        color:'#f97316', initials:'DP'},
+  {id:'m19', name:'Leila Hassan',      email:'leila.hassan@hubstaff.com',      color:'#e74c3c', initials:'LH'},
+  {id:'m20', name:'André Silva',       email:'andre.silva@hubstaff.com',       color:'#3b82f6', initials:'AS'},
+  {id:'m21', name:'Sophie Müller',     email:'sophie.muller@hubstaff.com',     color:'#10b981', initials:'SM'},
+  {id:'m22', name:'Carlos Torres',     email:'carlos.torres@hubstaff.com',     color:'#8b5cf6', initials:'CT'},
+  {id:'m23', name:'Mei Lin',           email:'mei.lin@hubstaff.com',           color:'#f59e0b', initials:'ML'},
+  {id:'m24', name:"Patrick O'Brien",   email:'patrick.obrien@hubstaff.com',    color:'#ec4899', initials:'PO'},
+  {id:'m25', name:'Valentina Russo',   email:'valentina.russo@hubstaff.com',   color:'#6366f1', initials:'VR'},
+  {id:'m26', name:'Kevin Ose',         email:'kevin.ose@hubstaff.com',         color:'#14b8a6', initials:'KO'},
+  {id:'m27', name:'Anastasia Novak',   email:'anastasia.novak@hubstaff.com',   color:'#f97316', initials:'AN'},
+  {id:'m28', name:'Omar Khalil',       email:'omar.khalil@hubstaff.com',       color:'#e74c3c', initials:'OK'},
+  {id:'m29', name:'Isabel Santos',     email:'isabel.santos@hubstaff.com',     color:'#3b82f6', initials:'IS'},
+  {id:'m30', name:'William Nakamura',  email:'william.nakamura@hubstaff.com',  color:'#10b981', initials:'WN'},
+  {id:'m31', name:'Fatima Al-Rashid',  email:'fatima.alrashid@hubstaff.com',   color:'#8b5cf6', initials:'FA'},
+  {id:'m32', name:'Ethan Brooks',      email:'ethan.brooks@hubstaff.com',      color:'#f59e0b', initials:'EB'},
+  {id:'m33', name:'Claudia Ferreira',  email:'claudia.ferreira@hubstaff.com',  color:'#ec4899', initials:'CF'},
+  {id:'m34', name:'Arjun Sharma',      email:'arjun.sharma@hubstaff.com',      color:'#6366f1', initials:'AS'},
+  {id:'m35', name:'Hannah Weber',      email:'hannah.weber@hubstaff.com',      color:'#14b8a6', initials:'HW'},
+  {id:'m36', name:'Mohammed Ali',      email:'mohammed.ali@hubstaff.com',      color:'#f97316', initials:'MA'},
+  {id:'m37', name:'Lily Johnson',      email:'lily.johnson@hubstaff.com',      color:'#e74c3c', initials:'LJ'},
+  {id:'m38', name:'Bruno Carvalho',    email:'bruno.carvalho@hubstaff.com',    color:'#3b82f6', initials:'BC'},
+  {id:'m39', name:'Elena Popescu',     email:'elena.popescu@hubstaff.com',     color:'#10b981', initials:'EP'},
+  {id:'m40', name:'Jayden Williams',   email:'jayden.williams@hubstaff.com',   color:'#8b5cf6', initials:'JW'},
+  {id:'m41', name:'Chloe Dupont',      email:'chloe.dupont@hubstaff.com',      color:'#f59e0b', initials:'CD'},
+  {id:'m42', name:'Ravi Kumar',        email:'ravi.kumar@hubstaff.com',        color:'#ec4899', initials:'RK'},
+  {id:'m43', name:'Laura Svensson',    email:'laura.svensson@hubstaff.com',    color:'#6366f1', initials:'LS'},
+  {id:'m44', name:'Felix Bauer',       email:'felix.bauer@hubstaff.com',       color:'#14b8a6', initials:'FB'},
+  {id:'m45', name:'Amara Diallo',      email:'amara.diallo@hubstaff.com',      color:'#f97316', initials:'AD'},
+  {id:'m46', name:'Samuel Cohen',      email:'samuel.cohen@hubstaff.com',      color:'#e74c3c', initials:'SC'},
+  {id:'m47', name:'Xiomara Herrera',   email:'xiomara.herrera@hubstaff.com',   color:'#3b82f6', initials:'XH'},
+  {id:'m48', name:'Nikolai Volkov',    email:'nikolai.volkov@hubstaff.com',    color:'#10b981', initials:'NV'},
+  {id:'m49', name:'Grace Adeyemi',     email:'grace.adeyemi@hubstaff.com',     color:'#8b5cf6', initials:'GA'},
+  {id:'m50', name:'Alex Kim',          email:'alex.kim@hubstaff.com',          color:'#f59e0b', initials:'AK'},
+  {id:'m51', name:'Thiago Barbosa',    email:'thiago.barbosa@hubstaff.com',    color:'#ec4899', initials:'TB'},
+  {id:'m52', name:'Mia Schmidt',       email:'mia.schmidt@hubstaff.com',       color:'#6366f1', initials:'MS'},
+  {id:'m53', name:'Daniel Martínez',   email:'daniel.martinez@hubstaff.com',   color:'#14b8a6', initials:'DM'},
+  {id:'m54', name:'Jasmine Okonkwo',   email:'jasmine.okonkwo@hubstaff.com',   color:'#f97316', initials:'JO'},
+  {id:'m55', name:'Thomas Hughes',     email:'thomas.hughes@hubstaff.com',     color:'#e74c3c', initials:'TH'},
+  {id:'m56', name:'Elena Sokolova',    email:'elena.sokolova@hubstaff.com',    color:'#3b82f6', initials:'ES'},
+  {id:'m57', name:'Pedro Alves',       email:'pedro.alves@hubstaff.com',       color:'#10b981', initials:'PA'},
+  {id:'m58', name:'Zara Ahmed',        email:'zara.ahmed@hubstaff.com',        color:'#8b5cf6', initials:'ZA'},
+  {id:'m59', name:'Lucas Andrade',     email:'lucas.andrade@hubstaff.com',     color:'#f59e0b', initials:'LA'},
+  {id:'m60', name:'Hana Suzuki',       email:'hana.suzuki@hubstaff.com',       color:'#ec4899', initials:'HS'},
+  // Design — m61..m68
+  {id:'m61', name:'Camila Ribeiro',    email:'camila.ribeiro@hubstaff.com',    color:'#6366f1', initials:'CR'},
+  {id:'m62', name:'Noah Baker',        email:'noah.baker@hubstaff.com',        color:'#14b8a6', initials:'NB'},
+  {id:'m63', name:'Sofia Pereira',     email:'sofia.pereira@hubstaff.com',     color:'#f97316', initials:'SP'},
+  {id:'m64', name:'Enzo Moreau',       email:'enzo.moreau@hubstaff.com',       color:'#e74c3c', initials:'EM'},
+  {id:'m65', name:'Isabela Santos',    email:'isabela.santos@hubstaff.com',    color:'#3b82f6', initials:'IS'},
+  {id:'m66', name:'Ryan Cooper',       email:'ryan.cooper@hubstaff.com',       color:'#10b981', initials:'RC'},
+  {id:'m67', name:'Alice Fontaine',    email:'alice.fontaine@hubstaff.com',    color:'#8b5cf6', initials:'AF'},
+  {id:'m68', name:'Marcus Webb',       email:'marcus.webb@hubstaff.com',       color:'#f59e0b', initials:'MW'},
+  // Product — m69..m83
+  {id:'m69', name:'Juliana Martins',   email:'juliana.martins@hubstaff.com',   color:'#ec4899', initials:'JM'},
+  {id:'m70', name:'Ethan Clarke',      email:'ethan.clarke@hubstaff.com',      color:'#6366f1', initials:'EC'},
+  {id:'m71', name:'Ana Rodrigues',     email:'ana.rodrigues@hubstaff.com',     color:'#14b8a6', initials:'AR'},
+  {id:'m72', name:'Michael Torres',    email:'michael.torres@hubstaff.com',    color:'#f97316', initials:'MT'},
+  {id:'m73', name:'Beatriz Oliveira',  email:'beatriz.oliveira@hubstaff.com',  color:'#e74c3c', initials:'BO'},
+  {id:'m74', name:'Joshua Kim',        email:'joshua.kim@hubstaff.com',        color:'#3b82f6', initials:'JK'},
+  {id:'m75', name:'Carla Mendoza',     email:'carla.mendoza@hubstaff.com',     color:'#10b981', initials:'CM'},
+  {id:'m76', name:'Dominic Chen',      email:'dominic.chen@hubstaff.com',      color:'#8b5cf6', initials:'DC'},
+  {id:'m77', name:'Paula Ferreira',    email:'paula.ferreira@hubstaff.com',    color:'#f59e0b', initials:'PF'},
+  {id:'m78', name:'Sam Wilson',        email:'sam.wilson@hubstaff.com',        color:'#ec4899', initials:'SW'},
+  {id:'m79', name:'Renata Costa',      email:'renata.costa@hubstaff.com',      color:'#6366f1', initials:'RC'},
+  {id:'m80', name:'Liam Murphy',       email:'liam.murphy@hubstaff.com',       color:'#14b8a6', initials:'LM'},
+  {id:'m81', name:'Gabriela Souza',    email:'gabriela.souza@hubstaff.com',    color:'#f97316', initials:'GS'},
+  {id:'m82', name:'Oscar Lindqvist',   email:'oscar.lindqvist@hubstaff.com',   color:'#e74c3c', initials:'OL'},
+  {id:'m83', name:'Maya Patel',        email:'maya.patel@hubstaff.com',        color:'#3b82f6', initials:'MP'},
+  // Sales — m84..m100
+  {id:'m84', name:'Débora Alves',      email:'debora.alves@hubstaff.com',      color:'#10b981', initials:'DA'},
+  {id:'m85', name:'Tom Eriksson',      email:'tom.eriksson@hubstaff.com',      color:'#8b5cf6', initials:'TE'},
+  {id:'m86', name:'Brandon Lee',       email:'brandon.lee@hubstaff.com',       color:'#f59e0b', initials:'BL'},
+  {id:'m87', name:'Daniela Cruz',      email:'daniela.cruz@hubstaff.com',      color:'#ec4899', initials:'DC'},
+  {id:'m88', name:'Eric Nguyen',       email:'eric.nguyen@hubstaff.com',       color:'#6366f1', initials:'EN'},
+  {id:'m89', name:'Laura Mitchell',    email:'laura.mitchell@hubstaff.com',    color:'#14b8a6', initials:'LM'},
+  {id:'m90', name:'Jordan Hayes',      email:'jordan.hayes@hubstaff.com',      color:'#f97316', initials:'JH'},
+  {id:'m91', name:'Valentina Lima',    email:'valentina.lima@hubstaff.com',    color:'#e74c3c', initials:'VL'},
+  {id:'m92', name:'Aaron Scott',       email:'aaron.scott@hubstaff.com',       color:'#3b82f6', initials:'AS'},
+  {id:'m93', name:'Giovanna Ferrari',  email:'giovanna.ferrari@hubstaff.com',  color:'#10b981', initials:'GF'},
+  {id:'m94', name:'Tyler Morris',      email:'tyler.morris@hubstaff.com',      color:'#8b5cf6', initials:'TM'},
+  {id:'m95', name:'Mariana Gomes',     email:'mariana.gomes@hubstaff.com',     color:'#f59e0b', initials:'MG'},
+  {id:'m96', name:'Chris Anderson',    email:'chris.anderson@hubstaff.com',    color:'#ec4899', initials:'CA'},
+  {id:'m97', name:'Lucia Vega',        email:'lucia.vega@hubstaff.com',        color:'#6366f1', initials:'LV'},
+  {id:'m98', name:'Nathan Brown',      email:'nathan.brown@hubstaff.com',      color:'#14b8a6', initials:'NB'},
+  {id:'m99', name:'Stefanie Meyer',    email:'stefanie.meyer@hubstaff.com',    color:'#f97316', initials:'SM'},
+  {id:'m100',name:'Adrian Rojas',      email:'adrian.rojas@hubstaff.com',      color:'#e74c3c', initials:'AR'},
+];
+
+const TL_TEAMS = [
+  { id: 't1', name: 'Engineering', memberIds: TL_MEMBERS.slice(0,  60).map(m => m.id) },
+  { id: 't2', name: 'Design',      memberIds: TL_MEMBERS.slice(60, 68).map(m => m.id) },
+  { id: 't3', name: 'Product',     memberIds: TL_MEMBERS.slice(68, 83).map(m => m.id) },
+  { id: 't4', name: 'Sales',       memberIds: TL_MEMBERS.slice(83,100).map(m => m.id) },
+];
+
+// ─────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────
+const tlState = {
+  teams:   new Set(),   // empty = all teams visible
+  members: new Set(),   // empty = all members visible
+  date: {
+    start:      new Date(2025, 10, 2),  // Nov 2
+    end:        new Date(2025, 10, 7),  // Nov 7
+    view:       new Date(2025, 10, 1),  // view: Nov 2025
+    draftStart: new Date(2025, 10, 2),
+    draftEnd:   new Date(2025, 10, 7),
+  },
+};
+
+const drState = {
+  projects: new Set(),
+  todos:    new Set(),
+  activity: null,
+};
+
+// ─────────────────────────────────────────────────────
+// ENTRY DATA GENERATION
+// ─────────────────────────────────────────────────────
+const TL_PROJECTS = [
+  { id: 'p1', name: 'Hubstaff Classic', color: '#9ca3af' },
+  { id: 'p2', name: 'Hubstaff New',     color: '#2aa7ff' },
+  { id: 'p3', name: 'Marketing & Ops',  color: '#f59e0b' },
+];
+
+const TL_DAYS = [
+  { iso: '2025-11-02', label: 'Sun, Nov 2, 2025' },
+  { iso: '2025-11-03', label: 'Mon, Nov 3, 2025' },
+  { iso: '2025-11-04', label: 'Tue, Nov 4, 2025' },
+  { iso: '2025-11-05', label: 'Wed, Nov 5, 2025' },
+  { iso: '2025-11-06', label: 'Thu, Nov 6, 2025' },
+  { iso: '2025-11-07', label: 'Fri, Nov 7, 2025' },
+];
+
+const _ENTRY_SLOTS = [
+  ['08:00','10:00'], ['08:30','11:00'], ['09:00','11:30'], ['09:00','12:00'],
+  ['09:30','11:30'], ['10:00','12:30'], ['10:00','13:00'], ['08:00','11:00'],
+  ['09:15','10:45'], ['10:30','12:30'], ['13:00','15:00'], ['13:30','16:00'],
+  ['14:00','16:30'], ['11:00','13:00'], ['07:30','09:30'],
+];
+
+const _TASKS = {
+  p1: ['Backend migration','API integration','Code review','Bug fixes','Database optimization','Refactoring','DevOps setup'],
+  p2: ['UI components','Feature development','Sprint planning','Testing','Documentation','Onboarding flow','Performance audit'],
+  p3: ['Campaign planning','Client calls','Reporting','Market research','Partnership outreach'],
+};
+
+function _slotMins(slot) {
+  const [fh, fm] = slot[0].split(':').map(Number);
+  const [th, tm] = slot[1].split(':').map(Number);
+  return (th * 60 + tm) - (fh * 60 + fm);
+}
+
+function _fmtDuration(mins) {
+  const h = Math.floor(mins / 60);
+  const m = String(mins % 60).padStart(2, '0');
+  const s = String((mins * 37) % 60).padStart(2, '0'); // fake seconds for realism
+  return `${h}:${m}:${s}`;
+}
+
+// Deterministic per-entry activity % (15–85 range, seeded by member + entry index)
+function _entryActivity(memberIdx, entryIdx) {
+  const seed = (memberIdx * 17 + entryIdx * 31 + 7) % 71;
+  return 15 + seed;
+}
+
+// Deterministic idle % — 0 for ~50% of entries, 1–10 for the rest
+function _entryIdle(memberIdx, entryIdx) {
+  const hasIdle = (memberIdx * 13 + entryIdx * 7 + 3) % 2 === 0;
+  if (!hasIdle) return 0;
+  return 1 + (memberIdx * 11 + entryIdx * 19 + 5) % 10;
+}
+
+function generateMemberEntries(memberIdx, dayIdx) {
+  const hasHN  = (memberIdx * 7  + 3)  % 10 < 9;
+  const hasMO  = (memberIdx * 11 + 7)  % 10 < 3;
+  const hasHC2 = (memberIdx * 5  + 13) % 10 < 6;
+
+  // Build ordered entry specs (project + task)
+  const specs = [];
+  specs.push({ projectId: 'p1', task: _TASKS.p1[memberIdx % _TASKS.p1.length] });
+  if (hasHC2) specs.push({ projectId: 'p1', task: _TASKS.p1[(memberIdx + 4) % _TASKS.p1.length] });
+  if (hasHN)  specs.push({ projectId: 'p2', task: _TASKS.p2[(memberIdx + 2) % _TASKS.p2.length] });
+  if (hasMO)  specs.push({ projectId: 'p3', task: _TASKS.p3[(memberIdx + 1) % _TASKS.p3.length] });
+
+  // Target total: 470–510 min (7h 50m – 8h 30m), centred near 8h
+  const targetMins = 470 + (memberIdx * 7 + dayIdx * 11 + 3) % 41;
+
+  // Seeded weight per entry so proportions feel natural (range 8–20)
+  const weights = specs.map((_, i) => 8 + (memberIdx * 17 + i * 23 + dayIdx * 11 + 5) % 13);
+  const weightSum = weights.reduce((s, w) => s + w, 0);
+
+  // Distribute — last entry absorbs rounding remainder
+  const mins = weights.map(w => Math.max(20, Math.round(targetMins * w / weightSum)));
+  const sumRest = mins.slice(0, -1).reduce((s, m) => s + m, 0);
+  mins[mins.length - 1] = Math.max(20, targetMins - sumRest);
+
+  // Start time: 7:30–8:30 AM (seeded per member+day)
+  let curMins = 450 + (memberIdx * 3 + dayIdx * 7) % 61;
+
+  return specs.map((spec, i) => {
+    const fromH = Math.floor(curMins / 60);
+    const fromM = curMins % 60;
+    const from  = `${String(fromH).padStart(2, '0')}:${String(fromM).padStart(2, '0')}`;
+    const toAbs = curMins + mins[i];
+    const toH   = Math.floor(toAbs / 60);
+    const toM   = toAbs % 60;
+    const to    = `${String(toH).padStart(2, '0')}:${String(toM).padStart(2, '0')}`;
+    // Gap between entries: 5–20 min
+    curMins = toAbs + 5 + (memberIdx * 13 + i * 7 + dayIdx * 3) % 16;
+    return {
+      projectId: spec.projectId, from, to, task: spec.task, minutes: mins[i],
+      activityPct: _entryActivity(memberIdx, i), idlePct: _entryIdle(memberIdx, i),
+    };
+  });
+}
+
+// ─────────────────────────────────────────────────────
+// UTILS
+// ─────────────────────────────────────────────────────
+const qs  = (sel, root = document) => root.querySelector(sel);
+const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+const isoToDate = iso => { const [y,m,d] = iso.split('-').map(Number); return new Date(y,m-1,d); };
+const isSameDay = (a,b) => a && b && a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+const normalizeRange = (a,b) => (!a||!b) ? {start:a,end:b} : (a<=b ? {start:a,end:b} : {start:b,end:a});
+const monthTitle = d => d.toLocaleString('en-US', {month:'long', year:'numeric'});
+const mdY = d => d.toLocaleString('en-US', {month:'short', day:'numeric'});
+
+// ─────────────────────────────────────────────────────
+// DROPDOWN ENGINE
+// ─────────────────────────────────────────────────────
+const listRenderCallbacks = new Map();
+
+function closeAllDropdowns(except = null) {
+  qsa('[data-dropdown]').forEach(wrap => {
+    if (wrap === except) return;
+    const panel = qs('[data-panel]', wrap);
+    if (!panel) return;
+    const wasOpen = panel.classList.contains('is-open');
+    panel.classList.remove('is-open');
+    const t = qs('[data-trigger]', wrap);
+    t?.setAttribute('aria-expanded', 'false');
+    t?.classList.remove('is-active');
+    if (wasOpen) {
+      const input = panel.querySelector('.dropdown-search-input');
+      if (input && input.value) {
+        input.value = '';
+        const clearBtn = panel.querySelector('.dropdown-search-clear');
+        if (clearBtn) clearBtn.style.display = 'none';
+        const listEl = panel.querySelector('[data-list]');
+        const fn = listEl && listRenderCallbacks.get(listEl);
+        if (fn) fn();
+      }
+    }
+  });
+}
+
+function toggleDropdown(wrap) {
+  const trigger = qs('[data-trigger]', wrap);
+  const panel   = qs('[data-panel]', wrap);
+  const isOpen  = panel.classList.contains('is-open');
+  closeAllDropdowns(wrap);
+  panel.classList.toggle('is-open', !isOpen);
+  trigger.setAttribute('aria-expanded', String(!isOpen));
+  trigger.classList.toggle('is-active', !isOpen);
+}
+
+// ─────────────────────────────────────────────────────
+// MULTI-SELECT
+// ─────────────────────────────────────────────────────
+function multiLabel(set, items, allLabel, plural) {
+  if (!set.size || set.size === items.length) return allLabel;
+  if (set.size === 1) return items.find(x => set.has(x.id))?.name;
+  return `${set.size} ${plural}`;
+}
+
+function renderMultiList(listEl, items, set, onChange) {
+  const panel = listEl.closest('.dropdown-panel');
+  const searchInput = panel?.querySelector('.dropdown-search-input');
+  const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  const visible = query ? items.filter(i => i.name.toLowerCase().includes(query)) : items;
+
+  listEl.innerHTML = '';
+
+  if (visible.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'list-empty';
+    empty.textContent = 'No results';
+    listEl.appendChild(empty);
+    return;
+  }
+
+  const bulkRow = document.createElement('div');
+  bulkRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:6px 12px;';
+
+  const selectAllBtn = document.createElement('button');
+  selectAllBtn.type = 'button';
+  selectAllBtn.textContent = 'Select all';
+  selectAllBtn.style.cssText = 'background:none;border:none;cursor:pointer;font:inherit;font-size:12px;font-weight:500;color:var(--primary);padding:0;';
+  selectAllBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    visible.forEach(item => set.add(item.id));
+    renderMultiList(listEl, items, set, onChange);
+    onChange();
+  });
+
+  const deselectAllBtn = document.createElement('button');
+  deselectAllBtn.type = 'button';
+  deselectAllBtn.textContent = 'Deselect all';
+  deselectAllBtn.style.cssText = 'background:none;border:none;cursor:pointer;font:inherit;font-size:12px;font-weight:500;color:var(--gray-400);padding:0;';
+  deselectAllBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    visible.forEach(item => set.delete(item.id));
+    renderMultiList(listEl, items, set, onChange);
+    onChange();
+  });
+
+  bulkRow.appendChild(selectAllBtn);
+  bulkRow.appendChild(deselectAllBtn);
+  listEl.appendChild(bulkRow);
+
+  const divider = document.createElement('div');
+  divider.style.cssText = 'height:1px;background:var(--gray-100);margin:0;';
+  listEl.appendChild(divider);
+
+  visible.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'list-item' + (set.has(item.id) ? ' is-selected' : '');
+    div.innerHTML = `<span class="list-check"></span><span class="list-label">${item.name}</span>`;
+    div.addEventListener('click', e => {
+      e.stopPropagation();
+      if (set.has(item.id)) set.delete(item.id); else set.add(item.id);
+      renderMultiList(listEl, items, set, onChange);
+      onChange();
+    });
+    listEl.appendChild(div);
+  });
+}
+
+// ─────────────────────────────────────────────────────
+// DROPDOWN SEARCH ENGINE
+// ─────────────────────────────────────────────────────
+function initDropdownSearch() {
+  qsa('.dropdown-panel').forEach(panel => {
+    const input    = panel.querySelector('.dropdown-search-input');
+    const clearBtn = panel.querySelector('.dropdown-search-clear');
+    const listEl   = panel.querySelector('[data-list]');
+    if (!input || !listEl) return;
+
+    const rerender = () => {
+      const fn = listRenderCallbacks.get(listEl);
+      if (fn) fn();
+    };
+
+    input.addEventListener('input', e => {
+      e.stopPropagation();
+      clearBtn.style.display = input.value ? 'flex' : 'none';
+      rerender();
+    });
+    input.addEventListener('click',   e => e.stopPropagation());
+    input.addEventListener('keydown', e => e.stopPropagation());
+
+    clearBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      input.value = '';
+      clearBtn.style.display = 'none';
+      rerender();
+      input.focus();
+    });
+  });
+}
+
+function syncMultiLabel(ddEl, set, items, allLabel, plural) {
+  const lbl = multiLabel(set, items, allLabel, plural);
+  const labelEl = qs('[data-label]', ddEl);
+  labelEl.textContent = lbl || allLabel;
+  labelEl.classList.remove('muted');
+}
+
+// ─────────────────────────────────────────────────────
+// TEAMS ENGINE
+// ─────────────────────────────────────────────────────
+function syncTeamsFromMembers(teamsSet, membersSet) {
+  TL_TEAMS.forEach(team => {
+    const all  = team.memberIds.length > 0 && team.memberIds.every(id => membersSet.has(id));
+    const none = team.memberIds.every(id => !membersSet.has(id));
+    if (all)  teamsSet.add(team.id);
+    if (none) teamsSet.delete(team.id);
+  });
+}
+
+function renderTeamList(listEl, teamsSet, membersSet, onUpdate) {
+  const panel = listEl.closest('.dropdown-panel');
+  const searchInput = panel?.querySelector('.dropdown-search-input');
+  const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  const visible = query ? TL_TEAMS.filter(t => t.name.toLowerCase().includes(query)) : TL_TEAMS;
+
+  listEl.innerHTML = '';
+
+  if (visible.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'list-empty';
+    empty.textContent = 'No results';
+    listEl.appendChild(empty);
+    return;
+  }
+
+  const bulkRow = document.createElement('div');
+  bulkRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:6px 12px;';
+
+  const selAllBtn = document.createElement('button');
+  selAllBtn.type = 'button';
+  selAllBtn.textContent = 'Select all';
+  selAllBtn.style.cssText = 'background:none;border:none;cursor:pointer;font:inherit;font-size:12px;font-weight:500;color:var(--primary);padding:0;';
+  selAllBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    visible.forEach(t => { teamsSet.add(t.id); t.memberIds.forEach(id => membersSet.add(id)); });
+    onUpdate();
+  });
+
+  const deselAllBtn = document.createElement('button');
+  deselAllBtn.type = 'button';
+  deselAllBtn.textContent = 'Deselect all';
+  deselAllBtn.style.cssText = 'background:none;border:none;cursor:pointer;font:inherit;font-size:12px;font-weight:500;color:var(--gray-400);padding:0;';
+  deselAllBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    visible.forEach(t => { teamsSet.delete(t.id); t.memberIds.forEach(id => membersSet.delete(id)); });
+    onUpdate();
+  });
+
+  bulkRow.appendChild(selAllBtn);
+  bulkRow.appendChild(deselAllBtn);
+  listEl.appendChild(bulkRow);
+
+  const divider = document.createElement('div');
+  divider.style.cssText = 'height:1px;background:var(--gray-100);margin:0;';
+  listEl.appendChild(divider);
+
+  visible.forEach(team => {
+    const isSelected = teamsSet.has(team.id);
+    const div = document.createElement('div');
+    div.className = 'list-item' + (isSelected ? ' is-selected' : '');
+    div.innerHTML = `<span class="list-check"></span><span class="list-label">${team.name}</span>`;
+    div.addEventListener('click', e => {
+      e.stopPropagation();
+      if (teamsSet.has(team.id)) {
+        teamsSet.delete(team.id);
+        team.memberIds.forEach(id => membersSet.delete(id));
+      } else {
+        teamsSet.add(team.id);
+        team.memberIds.forEach(id => membersSet.add(id));
+      }
+      onUpdate();
+    });
+    listEl.appendChild(div);
+  });
+}
+
+function syncTeamLabel(ddEl, teamsSet) {
+  const selected = TL_TEAMS.filter(t => teamsSet.has(t.id));
+  const lbl = selected.length === 0 || selected.length === TL_TEAMS.length ? 'All teams'
+    : selected.length === 1 ? selected[0].name
+    : `${selected.length} teams`;
+  qs('[data-label]', ddEl).textContent = lbl;
+}
+
+// ─────────────────────────────────────────────────────
+// CALENDAR
+// ─────────────────────────────────────────────────────
+function renderTlCalendar() {
+  const wrap  = qs('[data-dropdown="tl-date"]');
+  const grid  = qs('[data-tl-cal-grid]', wrap);
+  const title = qs('[data-tl-cal-title]', wrap);
+  const view  = tlState.date.view;
+  title.textContent = monthTitle(view);
+  grid.innerHTML = '';
+
+  const year = view.getFullYear(), month = view.getMonth();
+  const startDow    = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const prevDays    = new Date(year, month, 0).getDate();
+  const draft = normalizeRange(tlState.date.draftStart, tlState.date.draftEnd);
+
+  for (let i = 0; i < 42; i++) {
+    const dayNum = i - startDow + 1;
+    const isOutside = dayNum < 1 || dayNum > daysInMonth;
+    let date;
+    if (dayNum < 1) date = new Date(year, month-1, prevDays+dayNum);
+    else if (dayNum > daysInMonth) date = new Date(year, month+1, dayNum-daysInMonth);
+    else date = new Date(year, month, dayNum);
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'calendar-day' + (isOutside ? ' is-outside' : '');
+    btn.textContent = date.getDate();
+
+    const inRange = draft.start && draft.end && date >= draft.start && date <= draft.end;
+    if (inRange) btn.classList.add('is-range');
+    if (isSameDay(date, draft.start) || isSameDay(date, draft.end)) btn.classList.add('is-selected');
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const clicked = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      if (!tlState.date.draftStart || tlState.date.draftEnd) {
+        tlState.date.draftStart = clicked; tlState.date.draftEnd = null;
+      } else {
+        tlState.date.draftEnd = clicked;
+      }
+      renderTlCalendar(); updateTlDateLabel();
+    });
+    grid.appendChild(btn);
+  }
+}
+
+function updateTlDateLabel() {
+  const wrap  = qs('[data-dropdown="tl-date"]');
+  const label = qs('[data-label]', wrap);
+  const {draftStart, draftEnd} = tlState.date;
+  if (!draftStart) {
+    label.textContent = 'Select dates';
+    label.classList.add('muted');
+    return;
+  }
+  label.classList.remove('muted');
+  const r = normalizeRange(draftStart, draftEnd || draftStart);
+  label.textContent = isSameDay(r.start, r.end)
+    ? mdY(r.start)
+    : `${mdY(r.start)} – ${mdY(r.end)}`;
+}
+
+// ─────────────────────────────────────────────────────
+// FILTER: show/hide rows and day groups
+// ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────
+// PAGINATION
+// ─────────────────────────────────────────────────────
+const paginationState = {};
+TL_DAYS.forEach(d => { paginationState[d.iso] = { page: 1, perPage: 10 }; });
+
+function paginationFooterHTML(dayIso, total, page, perPage) {
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  const start = total === 0 ? 0 : (page - 1) * perPage + 1;
+  const end   = Math.min(page * perPage, total);
+
+  // Build page buttons with ellipsis
+  let pageHTML = '';
+  let lastWasEllipsis = false;
+  for (let p = 1; p <= totalPages; p++) {
+    const near = p === 1 || p === totalPages || Math.abs(p - page) <= 1;
+    if (near) {
+      lastWasEllipsis = false;
+      pageHTML += `<button class="pg-btn${p === page ? ' is-active' : ''}" data-pg-btn="${dayIso}" data-page="${p}">${p}</button>`;
+    } else if (!lastWasEllipsis) {
+      lastWasEllipsis = true;
+      pageHTML += `<span class="pg-ellipsis">…</span>`;
+    }
+  }
+
+  return `
+    <span>Showing ${start}–${end} of ${total} members</span>
+    <div class="per-page">
+      <select class="per-page-select" data-per-page="${dayIso}">
+        <option value="10"${perPage===10?' selected':''}>10</option>
+        <option value="20"${perPage===20?' selected':''}>20</option>
+        <option value="50"${perPage===50?' selected':''}>50</option>
+      </select>
+      <span>Per page</span>
+    </div>
+    <div class="pagination-gap"></div>
+    <div class="pagination">
+      <button class="pg-nav"${page<=1?' disabled':''} data-pg-nav="${dayIso}" data-dir="-1" data-tooltip="Previous page"><span class="ms">chevron_left</span></button>
+      ${pageHTML}
+      <button class="pg-nav"${page>=totalPages?' disabled':''} data-pg-nav="${dayIso}" data-dir="1" data-tooltip="Next page"><span class="ms">chevron_right</span></button>
+    </div>`;
+}
+
+function fmtMins(mins) {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h === 0) return `${m}m`;
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
+}
+
+function fmtTimeAmPm(t) {
+  const [h, m] = t.split(':').map(Number);
+  const period = h >= 12 ? 'pm' : 'am';
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2, '0')}${period}`;
+}
+
+function fmtDurationHMS(mins) {
+  const h = String(Math.floor(mins / 60)).padStart(2, '0');
+  const m = String(mins % 60).padStart(2, '0');
+  return `${h}:${m}:00`;
+}
+
+function updateDayHours(dayIso) {
+  const inner = document.querySelector(`.day-group-inner[data-date="${dayIso}"]`);
+  if (!inner) return;
+  const matchingMembers = Array.from(inner.querySelectorAll('.row-member'))
+    .filter(r => r.dataset.filterMatch !== '0');
+  let totalMins = 0;
+  matchingMembers.forEach(r => {
+    const mid = r.dataset.memberId;
+    inner.querySelectorAll(`.row-entry[data-member-id="${mid}"][data-project-match="1"]`)
+      .forEach(er => { totalMins += parseInt(er.querySelector('.entry-cb')?.dataset.minutes || 0); });
+  });
+  const hoursEl = inner.querySelector('.day-hours');
+  if (hoursEl) {
+    hoursEl.textContent = totalMins > 0 ? fmtMins(totalMins) : '—';
+  }
+}
+
+function applyPagination(dayIso) {
+  const { page, perPage } = paginationState[dayIso];
+  const inner = document.querySelector(`.day-group-inner[data-date="${dayIso}"]`);
+  if (!inner) return;
+
+  const allRows   = Array.from(inner.querySelectorAll('.row-member'));
+  const matching  = allRows.filter(r => r.dataset.filterMatch !== '0');
+  const pageRows  = new Set(matching.slice((page - 1) * perPage, page * perPage));
+
+  allRows.forEach(r => {
+    const show = pageRows.has(r);
+    r.style.display = show ? '' : 'none';
+    if (!show) {
+      const mid = r.dataset.memberId;
+      inner.querySelectorAll(`.row-entry[data-member-id="${mid}"]`)
+        .forEach(er => er.classList.remove('is-visible'));
+      r.classList.remove('is-expanded');
+    }
+  });
+
+  const footer = inner.querySelector('.table-footer');
+  if (footer) footer.innerHTML = paginationFooterHTML(dayIso, matching.length, page, perPage);
+
+  const dayGroup = inner.closest('.day-group');
+  if (dayGroup) dayGroup.style.display = matching.length > 0 ? '' : 'none';
+
+  updateDayHours(dayIso);
+  updateDayDividers();
+}
+
+function updateDayDividers() {
+  const groups = Array.from(document.querySelectorAll('.day-group'))
+    .filter(g => g.style.display !== 'none');
+  groups.forEach((g, i) => {
+    const inner = g.querySelector('.day-group-inner');
+    if (!inner) return;
+    if (i === 0) { inner.classList.remove('has-divider'); return; }
+    // Show divider above this day only if the previous visible day is collapsed
+    const prevInner = groups[i - 1].querySelector('.day-group-inner');
+    inner.classList.toggle('has-divider', !!prevInner?.classList.contains('is-collapsed'));
+  });
+}
+
+function applyFilters() {
+  const selMembers  = tlState.members;
+  const selProjects = drState.projects; // from drawer
+  const dateStart = tlState.date.start;
+  const dateEnd   = tlState.date.end;
+
+  TL_DAYS.forEach(day => {
+    const inner = document.querySelector(`.day-group-inner[data-date="${day.iso}"]`);
+    if (!inner) return;
+
+    // Date filter
+    let dateVisible = true;
+    if (dateStart) {
+      const date = isoToDate(day.iso);
+      const r = normalizeRange(dateStart, dateEnd || dateStart);
+      dateVisible = date >= r.start && date <= r.end;
+    }
+
+    let visibleCount = 0;
+
+    TL_MEMBERS.forEach((member, memberIdx) => {
+      const memberRow = inner.querySelector(`.row-member[data-member-id="${member.id}"]`);
+      if (!memberRow) return;
+
+      const entryRows = Array.from(
+        inner.querySelectorAll(`.row-entry[data-member-id="${member.id}"]`));
+
+      // Member filter
+      const memberMatch = selMembers.size === 0 || selMembers.has(member.id);
+
+      // Project filter — member is visible if at least one entry matches selected projects
+      let projectMatch = true;
+      if (selProjects.size > 0) {
+        projectMatch = entryRows.some(r => selProjects.has(r.dataset.projectId));
+      }
+
+      const visible = dateVisible && memberMatch && projectMatch;
+      memberRow.dataset.filterMatch = visible ? '1' : '0';
+
+      // Mark entry rows
+      entryRows.forEach(r => {
+        const entryProjMatch = selProjects.size === 0 || selProjects.has(r.dataset.projectId);
+        r.dataset.projectMatch = entryProjMatch ? '1' : '0';
+        if (memberRow.classList.contains('is-expanded')) {
+          r.classList.toggle('is-visible', visible && entryProjMatch);
+        }
+      });
+    });
+
+    // Reset to page 1 then paginate
+    paginationState[day.iso].page = 1;
+    applyPagination(day.iso);
+  });
+}
+
+// ─────────────────────────────────────────────────────
+// PREV/NEXT DATE NAVIGATION (shift by 1 day)
+// ─────────────────────────────────────────────────────
+function shiftDate(days) {
+  if (tlState.date.start) {
+    const ms = days * 24 * 60 * 60 * 1000;
+    tlState.date.start = new Date(tlState.date.start.getTime() + ms);
+    if (tlState.date.end) {
+      tlState.date.end = new Date(tlState.date.end.getTime() + ms);
+    }
+    tlState.date.draftStart = tlState.date.start;
+    tlState.date.draftEnd   = tlState.date.end;
+    // Update view to follow
+    tlState.date.view = new Date(tlState.date.start.getFullYear(), tlState.date.start.getMonth(), 1);
+    renderTlCalendar();
+    updateTlDateLabel();
+    applyFilters();
+  }
+}
+
+// ─────────────────────────────────────────────────────
+// RENDER DAY GROUPS
+// ─────────────────────────────────────────────────────
+(function renderDayGroups() {
+  const container = document.getElementById('day-groups-container');
+  if (!container) return;
+
+  function memberRowHTML(member, dayIso, entries) {
+    const totalMins = entries.reduce((s, e) => s + e.minutes, 0);
+    const totalTime = fmtDurationHMS(totalMins);
+    const hasEntries = entries.length > 0;
+    // Weighted average activity and idle across entries
+    const avgAct  = hasEntries ? Math.round(entries.reduce((s, e) => s + e.activityPct * e.minutes, 0) / totalMins) : null;
+    const avgIdle = hasEntries ? Math.round(entries.reduce((s, e) => s + e.idlePct * e.minutes, 0) / totalMins) : null;
+    const dash = '<span class="dash">--</span>';
+    return `
+      <tr class="row-member" data-member-id="${member.id}" data-date="${dayIso}">
+        <td class="td-check" data-change="New — selecting this row selects all time entries beneath it, even if collapsed."><label class="cb-wrap">${hasEntries
+          ? `<input type="checkbox" class="cb member-cb">`
+          : `<input type="checkbox" class="cb member-cb" disabled style="opacity:0.3;cursor:default;">`
+        }</label></td>
+        <td><div class="member-cell">
+          <button class="expand-btn${hasEntries ? '' : ' no-entries'}" type="button" data-tooltip="Expand entries" data-change="New — expands this member&apos;s day to reveal individual time entries. The entire row header is also clickable."><span class="ms">chevron_right</span></button>
+          <div class="avatar" style="background:${member.color};">${member.initials}</div>
+          <div class="member-info">
+            <span class="member-name">${member.name}</span>
+            <span class="member-email">${member.email}</span>
+          </div>
+        </div></td>
+        <td class="cell-num">${totalTime}</td>
+        <td>${hasEntries ? avgAct + '%' : dash}</td>
+        <td>${hasEntries && avgIdle > 0 ? avgIdle + '%' : dash}</td>
+        <td>${dash}</td>
+        <td>${dash}</td>
+        <td>${dash}</td>
+        <td><a class="ts-link">Sun, Nov 4 –<br>Sat, Nov 17</a></td>
+        <td><span class="pill pill-open">Open</span></td>
+        <td><button class="btn-actions">Actions <span class="ms">expand_more</span></button></td>
+      </tr>`;
+  }
+
+  function projInitials(name) {
+    return name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+  }
+
+  function entryRowHTML(member, dayIso, entry, entryIdx) {
+    const proj = TL_PROJECTS.find(p => p.id === entry.projectId);
+    const rowKey = `${member.id}_${dayIso}`;
+    return `
+      <tr class="row-entry" data-member-id="${member.id}" data-date="${dayIso}" data-project-id="${entry.projectId}" data-project-match="1" data-change="New — expanded time entry row. Gray-50 background; member column shows project and to-do; Timesheet and Status columns are hidden here.">
+        <td class="td-check"><label class="cb-wrap">
+          <input type="checkbox" class="cb entry-cb"
+            data-member-id="${member.id}"
+            data-date="${dayIso}"
+            data-minutes="${entry.minutes}"
+            data-row-key="${rowKey}">
+        </label></td>
+        <td><div class="entry-member-cell">
+          <span class="entry-dot" style="background:${proj.color};">${projInitials(proj.name)}</span>
+          <div class="member-info">
+            <span class="member-name">${proj.name}</span>
+            <span class="member-email">${entry.task}</span>
+          </div>
+        </div></td>
+        <td><div class="cell-time-stack" data-change="Changed — Time column now shows total duration on top and the time range below (e.g., 7:00 am – 10:00 am) in the same cell."><span class="cell-num">${fmtDurationHMS(entry.minutes)}</span><span class="cell-time-range">${fmtTimeAmPm(entry.from)} – ${fmtTimeAmPm(entry.to)}</span></div></td>
+        <td>${entry.activityPct}%</td>
+        <td>${entry.idlePct > 0 ? entry.idlePct + '%' : '<span class="dash">--</span>'}</td>
+        <td><span class="dash">--</span></td>
+        <td><span class="dash">--</span></td>
+        <td><span class="dash">--</span></td>
+        <td><span class="dash">--</span></td>
+        <td><span class="dash">--</span></td>
+        <td></td>
+      </tr>`;
+  }
+
+  function tableHTML(dayIso, rows) {
+    return `
+      <div class="table-container">
+        <div class="day-batch-bar" data-date="${dayIso}" data-change="New — batch action toolbar. Appears when one or more time entries are selected. Shows count of selected entries and action buttons.">
+          <div class="day-batch-bar-left">
+            <span class="day-batch-pill">
+              <span class="day-batch-pill-count">0 selected</span>
+              <button class="day-batch-pill-close ms" type="button" data-bar-clear="${dayIso}" data-tooltip="Deselect all">close</button>
+            </span>
+            <button class="day-batch-select-all" type="button" data-bar-select-all="${dayIso}">Select all</button>
+          </div>
+          <div class="day-batch-bar-right">
+            <button class="day-batch-action-btn" type="button" data-bar-reassign="${dayIso}" data-change="New — reassign selected entries to a different project (required) and to-do (optional). A reason is always required. Shows a yellow warning banner if project budget or member limit is exceeded.">
+              <span class="ms">compare_arrows</span>Reassign time
+            </button>
+            <button class="day-batch-action-btn" type="button" data-bar-delete="${dayIso}" data-change="New — delete selected time entries. A reason is always required; choosing &apos;Other&apos; reveals a text field.">
+              <span class="ms">delete</span>Delete time
+            </button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <colgroup>
+              <col class="col-check">
+              <col class="col-member">
+              <col class="col-totaltime">
+              <col class="col-activity">
+              <col class="col-idle">
+              <col class="col-manual">
+              <col class="col-holiday">
+              <col class="col-pto">
+              <col class="col-timesheet">
+              <col class="col-status">
+              <col class="col-actions">
+            </colgroup>
+            <thead>
+              <tr>
+                <th class="th-check" data-change="New — checkbox column for bulk-selecting time entries. Selecting the parent row selects all entries beneath it."><label class="cb-wrap"><input type="checkbox" class="cb select-all-cb" data-date="${dayIso}"></label></th>
+                <th><span class="th-member">Member <span class="ms">arrow_upward</span></span></th>
+                <th>Time</th>
+                <th>Activity</th>
+                <th>Idle</th>
+                <th>Manual</th>
+                <th>Holiday</th>
+                <th>PTO</th>
+                <th>Timesheet</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <div class="table-footer">
+          <span>Showing ${TL_MEMBERS.length} members</span>
+        </div>
+      </div>`;
+  }
+
+  TL_DAYS.forEach((day, dayIdx) => {
+    let rows = '';
+    TL_MEMBERS.forEach((member, memberIdx) => {
+      const entries = generateMemberEntries(memberIdx, dayIdx);
+      rows += memberRowHTML(member, day.iso, entries);
+      entries.forEach((entry, eIdx) => {
+        rows += entryRowHTML(member, day.iso, entry, eIdx);
+      });
+    });
+
+    const dayGroup = document.createElement('div');
+    dayGroup.className = 'day-group';
+    dayGroup.innerHTML = `
+      <div class="day-group-inner" data-date="${day.iso}">
+        <div class="day-header" data-change="Changed — the entire row is now clickable to expand or collapse, not just the chevron. Divider below this row hides when expanded.">
+          <span class="ms day-cal-icon" data-change="New — calendar icon added next to the date label.">calendar_today</span>
+          <span class="day-date">${day.label}</span>
+          <span class="day-dot">·</span>
+          <span class="day-hours">—</span>
+          <span class="ms day-chevron">expand_more</span>
+        </div>
+        ${tableHTML(day.iso, rows)}
+      </div>`;
+    container.appendChild(dayGroup);
+  });
+
+  // Re-wire day header collapse (day-group-inner click)
+  document.querySelectorAll('.day-header').forEach(hdr => {
+    hdr.addEventListener('click', () => {
+      const inner = hdr.closest('.day-group-inner');
+      inner.classList.toggle('is-collapsed');
+      updateDayDividers();
+    });
+  });
+
+  syncFoldBtn();
+
+  // Seed all rows as filter-visible, then paginate
+  document.querySelectorAll('.row-member').forEach(r => { r.dataset.filterMatch = '1'; });
+  TL_DAYS.forEach(d => applyPagination(d.iso));
+
+  // Collapse all day groups except the first
+  document.querySelectorAll('.day-group-inner').forEach((inner, i) => {
+    if (i > 0) inner.classList.add('is-collapsed');
+  });
+  syncFoldBtn();
+  updateDayDividers();
+})();
+
+// ─────────────────────────────────────────────────────
+// COLLAPSE / EXPAND DAY HEADERS
+// ─────────────────────────────────────────────────────
+function syncFoldBtn() {
+  const btn  = document.getElementById('btn-fold-all');
+  const icon = btn.querySelector('.ms');
+  const allCollapsed = Array.from(document.querySelectorAll('.day-group-inner'))
+    .every(el => el.classList.contains('is-collapsed'));
+  icon.textContent = allCollapsed ? 'unfold_more' : 'unfold_less';
+  btn.dataset.tooltip = allCollapsed ? 'Expand days' : 'Collapse days';
+}
+
+document.getElementById('btn-fold-all').addEventListener('click', () => {
+  const inners = Array.from(document.querySelectorAll('.day-group-inner'));
+  const allCollapsed = inners.every(el => el.classList.contains('is-collapsed'));
+  inners.forEach(el => el.classList.toggle('is-collapsed', !allCollapsed));
+  syncFoldBtn();
+  updateDayDividers();
+});
+
+// ─────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────
+(function init() {
+  const teamDdEl   = qs('[data-dropdown="tl-teams"]');
+  const memberDdEl = qs('[data-dropdown="tl-members"]');
+
+  function rerenderTeams() {
+    renderTeamList(qs('[data-list="tl-teams"]'), tlState.teams, tlState.members, onTeamClick);
+    syncTeamLabel(teamDdEl, tlState.teams);
+  }
+
+  function onTeamClick() {
+    rerenderTeams();
+    renderMultiList(qs('[data-list="tl-members"]'), TL_MEMBERS, tlState.members, onMemberClick);
+    syncMultiLabel(memberDdEl, tlState.members, TL_MEMBERS, 'All members', 'members');
+    applyFilters();
+  }
+
+  function onMemberClick() {
+    syncMultiLabel(memberDdEl, tlState.members, TL_MEMBERS, 'All members', 'members');
+    syncTeamsFromMembers(tlState.teams, tlState.members);
+    rerenderTeams();
+    applyFilters();
+  }
+
+  rerenderTeams();
+  renderMultiList(qs('[data-list="tl-members"]'), TL_MEMBERS, tlState.members, onMemberClick);
+  syncMultiLabel(memberDdEl, tlState.members, TL_MEMBERS, 'All members', 'members');
+
+  // Register search callbacks
+  listRenderCallbacks.set(qs('[data-list="tl-teams"]'),   rerenderTeams);
+  listRenderCallbacks.set(qs('[data-list="tl-members"]'), () => renderMultiList(qs('[data-list="tl-members"]'), TL_MEMBERS, tlState.members, onMemberClick));
+
+  // Init search
+  initDropdownSearch();
+
+  // Calendar
+  renderTlCalendar();
+  updateTlDateLabel();
+
+  const dateWrap = qs('[data-dropdown="tl-date"]');
+  qs('[data-tl-cal-prev]', dateWrap).addEventListener('click', (e) => {
+    e.stopPropagation();
+    tlState.date.view = new Date(tlState.date.view.getFullYear(), tlState.date.view.getMonth()-1, 1);
+    renderTlCalendar();
+  });
+  qs('[data-tl-cal-next]', dateWrap).addEventListener('click', (e) => {
+    e.stopPropagation();
+    tlState.date.view = new Date(tlState.date.view.getFullYear(), tlState.date.view.getMonth()+1, 1);
+    renderTlCalendar();
+  });
+  qs('[data-tl-cal-clear]', dateWrap).addEventListener('click', (e) => {
+    e.stopPropagation();
+    tlState.date.draftStart = null; tlState.date.draftEnd = null;
+    tlState.date.start = null;     tlState.date.end = null;
+    renderTlCalendar(); updateTlDateLabel();
+    applyFilters();
+  });
+  qs('[data-tl-cal-apply]', dateWrap).addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (tlState.date.draftStart) {
+      const r = normalizeRange(tlState.date.draftStart, tlState.date.draftEnd || tlState.date.draftStart);
+      tlState.date.start = r.start;
+      tlState.date.end   = r.end;
+    } else {
+      tlState.date.start = null;
+      tlState.date.end   = null;
+    }
+    closeAllDropdowns();
+    applyFilters();
+  });
+
+  // Dropdown triggers (toggle on click)
+  qsa('[data-dropdown]').forEach(wrap => {
+    const trigger = qs('[data-trigger]', wrap);
+    if (trigger) {
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleDropdown(wrap);
+      });
+    }
+  });
+
+  // Close on outside click
+  document.addEventListener('click', () => closeAllDropdowns());
+
+  // Prev/Next date nav buttons
+  document.getElementById('tl-date-prev').addEventListener('click', () => shiftDate(-1));
+  document.getElementById('tl-date-next').addEventListener('click', () => shiftDate(1));
+
+  // Apply initial filter (all visible since no member filter set)
+  applyFilters();
+})();
+
+// ─────────────────────────────────────────────────────
+// FILTERS DRAWER
+// ─────────────────────────────────────────────────────
+const DR_PROJECTS = TL_PROJECTS; // same data — already has id, name, color
+const DR_TODOS = [
+  { id: 'dt1', name: 'Backend migration'    },
+  { id: 'dt2', name: 'UI components'        },
+  { id: 'dt3', name: 'API integration'      },
+  { id: 'dt4', name: 'Code review'          },
+  { id: 'dt5', name: 'Bug fixes'            },
+];
+const DR_ACTIVITY = [
+  { id: null,        name: 'All activity' },
+  { id: 'above_95',  name: '> 95%'        },
+  { id: 'above_90',  name: '> 90%'        },
+  { id: 'above_80',  name: '> 80%'        },
+  { id: 'above_70',  name: '> 70%'        },
+  { id: 'above_60',  name: '> 60%'        },
+  { id: 'above_50',  name: '> 50%'        },
+  { id: 'below_50',  name: '< 50%'        },
+  { id: 'below_40',  name: '< 40%'        },
+  { id: 'below_30',  name: '< 30%'        },
+  { id: 'below_20',  name: '< 20%'        },
+  { id: 'below_10',  name: '< 10%'        },
+];
+
+function openDrawer() {
+  document.getElementById('filters-drawer').classList.add('is-open');
+  document.getElementById('drawer-overlay').classList.add('is-open');
+  closeAllDropdowns();
+}
+
+function closeDrawer() {
+  document.getElementById('filters-drawer').classList.remove('is-open');
+  document.getElementById('drawer-overlay').classList.remove('is-open');
+  closeAllDropdowns();
+}
+
+// Render a simple single-select list (no checkboxes)
+function renderSingleList(listEl, items, selectedId, onSelect) {
+  listEl.innerHTML = '';
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'list-item' + (item.id === selectedId ? ' is-selected' : '');
+    div.innerHTML = `<span class="list-label">${item.name}</span>`;
+    div.addEventListener('click', e => {
+      e.stopPropagation();
+      onSelect(item);
+      closeAllDropdowns();
+    });
+    listEl.appendChild(div);
+  });
+}
+
+(function initDrawer() {
+  // Projects multi-select
+  const projSet = drState.projects;
+  const projDd  = qs('[data-dropdown="dr-projects"]');
+  const projList = qs('[data-list="dr-projects"]');
+  function onProjChange() {
+    const lbl = projSet.size === 0 || projSet.size === DR_PROJECTS.length ? null
+      : projSet.size === 1 ? DR_PROJECTS.find(p => projSet.has(p.id))?.name
+      : `${projSet.size} projects`;
+    const labelEl = qs('[data-label]', projDd);
+    labelEl.textContent = lbl || 'All projects';
+    labelEl.classList.toggle('muted', !lbl);
+    applyFilters();
+    updateFiltersBadge();
+  }
+  renderMultiList(projList, DR_PROJECTS, projSet, onProjChange);
+  listRenderCallbacks.set(projList, () => renderMultiList(projList, DR_PROJECTS, projSet, onProjChange));
+
+  // To-dos / Jobs multi-select
+  const todoSet  = drState.todos;
+  const todoDd   = qs('[data-dropdown="dr-todos"]');
+  const todoList = qs('[data-list="dr-todos"]');
+  function onTodoChange() {
+    const lbl = todoSet.size === 0 || todoSet.size === DR_TODOS.length ? null
+      : todoSet.size === 1 ? DR_TODOS.find(t => todoSet.has(t.id))?.name
+      : `${todoSet.size} to-dos`;
+    const labelEl = qs('[data-label]', todoDd);
+    labelEl.textContent = lbl || 'All to-dos';
+    labelEl.classList.toggle('muted', !lbl);
+    updateFiltersBadge();
+  }
+  renderMultiList(todoList, DR_TODOS, todoSet, onTodoChange);
+  listRenderCallbacks.set(todoList, () => renderMultiList(todoList, DR_TODOS, todoSet, onTodoChange));
+
+  // Activity single-select
+  const actDd   = qs('[data-dropdown="dr-activity"]');
+  const actList = qs('[data-list="dr-activity"]');
+  function renderActivity() {
+    renderSingleList(actList, DR_ACTIVITY, drState.activity, item => {
+      drState.activity = item.id;
+      const labelEl = qs('[data-label]', actDd);
+      labelEl.textContent = item.name;
+      labelEl.classList.toggle('muted', item.id === null);
+      renderActivity();
+      updateFiltersBadge();
+    });
+  }
+  renderActivity();
+
+  // Open/close
+  function updateFiltersBadge() {
+    const count = (projSet.size > 0 ? 1 : 0) + (todoSet.size > 0 ? 1 : 0) + (drState.activity ? 1 : 0);
+    const btn = document.querySelector('.btn-filters');
+    let badge = btn.querySelector('.filters-badge');
+    if (count > 0) {
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'filters-badge';
+        btn.appendChild(badge);
+      }
+      badge.textContent = count;
+    } else {
+      if (badge) badge.remove();
+    }
+  }
+
+  document.querySelector('.btn-filters').addEventListener('click', e => {
+    e.stopPropagation();
+    openDrawer();
+  });
+  document.getElementById('drawer-close-btn').addEventListener('click', closeDrawer);
+  document.getElementById('drawer-overlay').addEventListener('click', closeDrawer);
+
+  // Apply button
+  document.getElementById('drawer-apply-btn').addEventListener('click', () => {
+    updateFiltersBadge();
+    closeDrawer();
+  });
+
+  // Clear filters
+  document.querySelector('.drawer-clear-btn').addEventListener('click', () => {
+    projSet.clear();  todoSet.clear();
+    drState.activity = null;
+    renderMultiList(projList,  DR_PROJECTS, projSet,  onProjChange);  onProjChange();
+    renderMultiList(todoList,  DR_TODOS,    todoSet,  onTodoChange);  onTodoChange();
+    renderActivity();
+    const actLabel = qs('[data-dropdown="dr-activity"] [data-label]');
+    actLabel.textContent = 'All activity'; actLabel.classList.add('muted');
+    updateFiltersBadge();
+  });
+
+  // Re-init search for drawer panels
+  initDropdownSearch();
+})();
+
+// ─────────────────────────────────────────────────────
+// BATCH SELECTION (event delegation — works with dynamic rows)
+// ─────────────────────────────────────────────────────
+(function initBatchSelect() {
+  const mainCard = document.querySelector('.main-card');
+
+  function visibleEntryCbs(dayIso) {
+    return Array.from(document.querySelectorAll(`.entry-cb[data-date="${dayIso}"]`))
+      .filter(cb => cb.closest('.row-entry').classList.contains('is-visible'));
+  }
+
+  function allEntryCbs(dayIso) {
+    return Array.from(document.querySelectorAll(`.entry-cb[data-date="${dayIso}"]`))
+      .filter(cb => cb.closest('.row-entry').dataset.projectMatch !== '0');
+  }
+
+  const MAX_REASSIGN = 5; // 100 in production — lowered for prototype demo
+
+  function updateDayBatchBar(dayIso) {
+    const bar = document.querySelector(`.day-batch-bar[data-date="${dayIso}"]`);
+    if (!bar) return;
+    const all     = allEntryCbs(dayIso);
+    const checked = all.filter(cb => cb.checked);
+    if (checked.length === 0) { bar.classList.remove('is-visible'); return; }
+    bar.querySelector('.day-batch-pill-count').textContent = `${checked.length} selected`;
+    bar.querySelector('[data-bar-select-all]').textContent =
+      checked.length === all.length ? 'Deselect all' : `Select all (${all.length})`;
+    bar.classList.add('is-visible');
+
+    const reassignBtn = bar.querySelector('[data-bar-reassign]');
+    const tooMany = checked.length > MAX_REASSIGN;
+    reassignBtn.disabled = tooMany;
+    if (tooMany) {
+      reassignBtn.dataset.tooltip = 'Too many entries selected. Select 100 or fewer to reassign.';
+    } else {
+      delete reassignBtn.dataset.tooltip;
+    }
+  }
+
+  function updateBar() {
+    // no-op — replaced by per-day bars
+  }
+
+  function syncParent(memberRow) {
+    const pcb = memberRow.querySelector('.member-cb');
+    if (!pcb || pcb.disabled) return;
+    const kids = Array.from(document.querySelectorAll(
+      `.entry-cb[data-member-id="${memberRow.dataset.memberId}"][data-date="${memberRow.dataset.date}"]`
+    )).filter(cb => cb.closest('.row-entry').classList.contains('is-visible'));
+    if (!kids.length) return;
+    const n = kids.filter(c => c.checked).length;
+    pcb.indeterminate = n > 0 && n < kids.length;
+    pcb.checked = n === kids.length;
+    memberRow.classList.toggle('is-selected', n > 0);
+  }
+
+  function syncSelectAll(date) {
+    const sacb = document.querySelector(`.select-all-cb[data-date="${date}"]`);
+    if (!sacb) return;
+    const kids = visibleEntryCbs(date);
+    if (!kids.length) return;
+    const n = kids.filter(c => c.checked).length;
+    sacb.indeterminate = n > 0 && n < kids.length;
+    sacb.checked = n === kids.length;
+  }
+
+  mainCard.addEventListener('change', e => {
+    // Member (parent) checkbox
+    if (e.target.classList.contains('member-cb')) {
+      const row = e.target.closest('.row-member');
+      const mid = row.dataset.memberId, date = row.dataset.date;
+      document.querySelectorAll(`.entry-cb[data-member-id="${mid}"][data-date="${date}"]`)
+        .forEach(cb => {
+          if (cb.closest('.row-entry').dataset.projectMatch === '0') return;
+          cb.checked = e.target.checked;
+          cb.closest('.row-entry').classList.toggle('is-selected', e.target.checked);
+        });
+      row.classList.toggle('is-selected', e.target.checked);
+      syncSelectAll(date);
+      updateDayBatchBar(date);
+    }
+
+    // Entry checkbox
+    if (e.target.classList.contains('entry-cb')) {
+      e.target.closest('.row-entry').classList.toggle('is-selected', e.target.checked);
+      const row = document.querySelector(
+        `.row-member[data-member-id="${e.target.dataset.memberId}"][data-date="${e.target.dataset.date}"]`);
+      if (row) syncParent(row);
+      syncSelectAll(e.target.dataset.date);
+      updateDayBatchBar(e.target.dataset.date);
+    }
+
+    // Select-all checkbox
+    if (e.target.classList.contains('select-all-cb')) {
+      const date = e.target.dataset.date;
+      // When checking, only target visible entries. When unchecking, clear ALL to avoid ghost selections.
+      const targets = e.target.checked ? visibleEntryCbs(date) : allEntryCbs(date);
+      targets.forEach(cb => {
+        cb.checked = e.target.checked;
+        cb.closest('.row-entry').classList.toggle('is-selected', e.target.checked);
+      });
+      document.querySelectorAll(`.row-member[data-date="${date}"]`).forEach(row => {
+        const pcb = row.querySelector('.member-cb');
+        if (pcb && !pcb.disabled) {
+          pcb.checked = e.target.checked; pcb.indeterminate = false;
+          row.classList.toggle('is-selected', e.target.checked);
+        }
+      });
+      updateDayBatchBar(date);
+    }
+  });
+
+  // Per-page select
+  mainCard.addEventListener('change', e => {
+    const sel = e.target.closest('[data-per-page]');
+    if (!sel) return;
+    const dayIso = sel.dataset.perPage;
+    paginationState[dayIso].perPage = parseInt(sel.value);
+    paginationState[dayIso].page = 1;
+    applyPagination(dayIso);
+  });
+
+  // Pagination nav + page buttons
+  mainCard.addEventListener('click', e => {
+    const nav = e.target.closest('[data-pg-nav]');
+    if (nav && !nav.disabled) {
+      const dayIso = nav.dataset.pgNav;
+      paginationState[dayIso].page += parseInt(nav.dataset.dir);
+      applyPagination(dayIso);
+      return;
+    }
+    const btn = e.target.closest('[data-pg-btn]');
+    if (btn) {
+      const dayIso = btn.dataset.pgBtn;
+      paginationState[dayIso].page = parseInt(btn.dataset.page);
+      applyPagination(dayIso);
+      return;
+    }
+  });
+
+  // Expand buttons — event delegation
+  mainCard.addEventListener('click', e => {
+    const btn = e.target.closest('.expand-btn');
+    if (!btn || btn.classList.contains('no-entries') || btn.disabled) return;
+    const row = btn.closest('.row-member');
+    const mid = row.dataset.memberId, date = row.dataset.date;
+
+    // Collapsing: immediate
+    if (row.classList.contains('is-expanded')) {
+      row.classList.remove('is-expanded');
+      // Remove any in-progress loading row
+      const existing = row.nextElementSibling;
+      if (existing && existing.classList.contains('row-loading')) existing.remove();
+      document.querySelectorAll(`.row-entry[data-member-id="${mid}"][data-date="${date}"]`)
+        .forEach(r => r.classList.remove('is-visible'));
+      return;
+    }
+
+    // Expanding: show loading state for 0.5–1s
+    row.classList.add('is-expanded');
+    btn.disabled = true;
+
+    const skDefs = [
+      { name: 88, sub: 64, time: 50, act: 32 },
+    ];
+    const skRows = skDefs.map((d, i) => {
+      const tr = document.createElement('tr');
+      tr.className = 'row-skeleton';
+      tr.style.setProperty('--sk-delay', `${i * 0.12}s`);
+      tr.innerHTML = `
+        <td class="td-check"><div class="sk sk-check"></div></td>
+        <td><div class="entry-member-cell">
+          <div class="sk sk-avatar"></div>
+          <div class="sk-lines">
+            <div class="sk sk-line"    style="width:${d.name}px"></div>
+            <div class="sk sk-line sk-line-sm" style="width:${d.sub}px"></div>
+          </div>
+        </div></td>
+        <td><div class="sk sk-text" style="width:${d.time}px"></div></td>
+        <td><div class="sk sk-text" style="width:${d.act}px"></div></td>
+        <td><div class="sk sk-text" style="width:42px"></div></td>
+        <td><div class="sk sk-text" style="width:10px"></div></td>
+        <td><div class="sk sk-text" style="width:10px"></div></td>
+        <td><div class="sk sk-text" style="width:10px"></div></td>
+        <td><div class="sk sk-pill" style="width:52px"></div></td>
+        <td><div class="sk sk-btn"  style="width:70px"></div></td>`;
+      return tr;
+    });
+
+    let anchor = row;
+    skRows.forEach(tr => { anchor.after(tr); anchor = tr; });
+
+    const delay = 500 + Math.random() * 1000;
+    setTimeout(() => {
+      skRows.forEach(tr => tr.remove());
+      btn.disabled = false;
+      document.querySelectorAll(`.row-entry[data-member-id="${mid}"][data-date="${date}"]`)
+        .forEach(r => {
+          if (r.dataset.projectMatch !== '0') r.classList.add('is-visible');
+        });
+    }, delay);
+  });
+
+  // Per-day bar interactions (pill × / select-all / actions)
+  document.querySelector('.main-card').addEventListener('click', e => {
+    // Pill × — deselect all for this day
+    const clearBtn = e.target.closest('[data-bar-clear]');
+    if (clearBtn) {
+      const date = clearBtn.dataset.barClear;
+      document.querySelectorAll(`.entry-cb[data-date="${date}"], .select-all-cb[data-date="${date}"]`)
+        .forEach(cb => { cb.checked = false; cb.indeterminate = false; });
+      document.querySelectorAll(`.row-member[data-date="${date}"] .member-cb`)
+        .forEach(cb => { cb.checked = false; cb.indeterminate = false; });
+      document.querySelectorAll(`.row-member[data-date="${date}"], .row-entry[data-date="${date}"]`)
+        .forEach(r => r.classList.remove('is-selected'));
+      document.querySelector(`.day-batch-bar[data-date="${date}"]`)?.classList.remove('is-visible');
+      return;
+    }
+
+    // Select all / Deselect all
+    const saBtn = e.target.closest('[data-bar-select-all]');
+    if (saBtn) {
+      const date = saBtn.dataset.barSelectAll;
+      const allEntries = visibleEntryCbs(date);
+      const allChecked = allEntries.every(cb => cb.checked);
+      allEntries.forEach(cb => {
+        cb.checked = !allChecked;
+        cb.closest('.row-entry').classList.toggle('is-selected', !allChecked);
+      });
+      document.querySelectorAll(`.row-member[data-date="${date}"]`).forEach(row => {
+        const pcb = row.querySelector('.member-cb');
+        if (pcb && !pcb.disabled) { pcb.checked = !allChecked; pcb.indeterminate = false; }
+        row.classList.toggle('is-selected', !allChecked);
+      });
+      const sacb = document.querySelector(`.select-all-cb[data-date="${date}"]`);
+      if (sacb) { sacb.checked = !allChecked; sacb.indeterminate = false; }
+      updateDayBatchBar(date);
+      return;
+    }
+
+    // Reassign — open modal
+    const reassignBtn = e.target.closest('[data-bar-reassign]');
+    if (reassignBtn) {
+      if (window._openReassignModal) window._openReassignModal(reassignBtn.dataset.barReassign);
+      return;
+    }
+    const deleteBtn = e.target.closest('[data-bar-delete]');
+    if (deleteBtn) {
+      if (window._openDeleteModal) window._openDeleteModal(deleteBtn.dataset.barDelete);
+      return;
+    }
+  });
+})();
+</script>
+
+<!-- ─── REASSIGN MODAL ──────────────────────────────── -->
+<div class="rmodal-overlay" id="rmodal-overlay" role="dialog" aria-modal="true" aria-labelledby="rmodal-title">
+  <div class="rmodal">
+
+    <div class="rmodal-header">
+      <span class="rmodal-title" id="rmodal-title">Reassign time</span>
+      <button class="rmodal-close" id="rmodal-close" type="button" data-tooltip="Close"><span class="ms">close</span></button>
+    </div>
+
+    <div class="rmodal-body">
+
+      <!-- Summary card -->
+      <div class="rmodal-summary">
+        <div class="rmodal-summary-label">You're reassigning:</div>
+        <div class="rmodal-summary-lines">
+          <p>Time entries: <span id="rms-entries">0</span></p>
+          <p>Projects: <span id="rms-projects">0</span></p>
+          <p>To-dos: <span id="rms-todos">0</span></p>
+          <p>Total hours: <span id="rms-hours">00:00:00</span></p>
+        </div>
+      </div>
+
+      <!-- Form fields -->
+      <div class="rmodal-fields">
+
+        <!-- Project dropdown -->
+        <div class="rmodal-field">
+          <label class="rmodal-field-label">Reassign to Project / work order*</label>
+          <div class="dropdown" data-dropdown="rm-project" style="width:100%;">
+            <button class="select-shell" type="button" data-trigger aria-haspopup="dialog" aria-expanded="false">
+              <span class="select-value muted" data-label>Select project/work order</span>
+              <span class="select-icon ms">keyboard_arrow_down</span>
+            </button>
+            <div class="dropdown-panel" data-panel>
+              <div class="list" data-list="rm-project"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- To-do dropdown -->
+        <div class="rmodal-field">
+          <label class="rmodal-field-label">Reassign to To-do / Job</label>
+          <div class="dropdown" data-dropdown="rm-todo" style="width:100%;">
+            <button class="select-shell" type="button" data-trigger aria-haspopup="dialog" aria-expanded="false">
+              <span class="select-value muted" data-label>Select to-do/job</span>
+              <span class="select-icon ms">keyboard_arrow_down</span>
+            </button>
+            <div class="dropdown-panel" data-panel>
+              <div class="list" data-list="rm-todo"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reason dropdown -->
+        <div class="rmodal-field">
+          <label class="rmodal-field-label">Reason <span class="required-star">*</span></label>
+          <div class="dropdown" data-dropdown="rm-reason" style="width:100%;">
+            <button class="select-shell reason-shell" type="button" data-trigger aria-haspopup="dialog" aria-expanded="false">
+              <span class="select-value muted" data-label>Select reason</span>
+              <span class="select-icon ms">keyboard_arrow_down</span>
+            </button>
+            <div class="dropdown-panel" data-panel>
+              <div class="list" data-list="rm-reason"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Write reason — shown only when "Other" is selected -->
+        <div class="rmodal-field" id="rmodal-other-wrap" style="display:none;">
+          <label class="rmodal-field-label">Write reason <span class="required-star">*</span></label>
+          <textarea
+            id="rmodal-other-input"
+            class="rmodal-other-input"
+            placeholder="Write the other reason"
+            maxlength="500"
+          ></textarea>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="rmodal-footer">
+      <button class="rmodal-cancel" id="rmodal-cancel" type="button">Cancel</button>
+      <button class="rmodal-confirm" id="rmodal-confirm" type="button" disabled>Reassign <span id="rmodal-cta-count">0</span> time entries</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────
+// REASSIGN MODAL
+// ─────────────────────────────────────────────────────
+(function initReassignModal() {
+  const overlay  = document.getElementById('rmodal-overlay');
+  const closeBtn = document.getElementById('rmodal-close');
+  const cancelBtn = document.getElementById('rmodal-cancel');
+  const confirmBtn = document.getElementById('rmodal-confirm');
+
+  const RM_PROJECTS = TL_PROJECTS.map(p => ({ id: p.id, name: p.name }));
+  const RM_TODOS    = [{ id: null, name: 'None' }, ...DR_TODOS];
+  const RM_REASONS  = [
+    { id: 'wrong_project',  name: 'Logged to wrong project'  },
+    { id: 'reassignment',   name: 'Team reassignment'         },
+    { id: 'project_rename', name: 'Project renamed/merged'    },
+    { id: 'correction',     name: 'Manual correction'         },
+    { id: 'other',          name: 'Other'                     },
+  ];
+
+  let rmState = { project: null, todo: null, reason: null };
+  let _pendingDate = null;
+
+  // ── helpers ──────────────────────────────────────────
+  function getCheckedForDate(dayIso) {
+    return Array.from(document.querySelectorAll(
+      dayIso
+        ? `.entry-cb[data-date="${dayIso}"]:checked`
+        : '.entry-cb:checked'
+    )).filter(cb => cb.closest('.row-entry').dataset.projectMatch !== '0');
+  }
+
+  function fmtHMS(totalMins) {
+    const h = Math.floor(totalMins / 60);
+    const m = totalMins % 60;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00`;
+  }
+
+  function populateSummary(dayIso) {
+    const cbs = getCheckedForDate(dayIso);
+    const n   = cbs.length;
+    const projects = new Set(cbs.map(cb => cb.closest('.row-entry').dataset.projectId)).size;
+    const todos    = new Set(cbs.map(cb => {
+      const mid  = cb.dataset.memberId;
+      const date = cb.dataset.date;
+      const row  = cb.closest('.row-entry');
+      return row.dataset.projectId + ':' + row.querySelector('.member-email')?.textContent;
+    })).size;
+    const totalMins = cbs.reduce((s, cb) => s + parseInt(cb.dataset.minutes || 0), 0);
+
+    document.getElementById('rms-entries').textContent  = n;
+    document.getElementById('rms-projects').textContent = projects;
+    document.getElementById('rms-todos').textContent    = todos;
+    document.getElementById('rms-hours').textContent    = fmtHMS(totalMins);
+    document.getElementById('rmodal-cta-count').textContent = n;
+    updateConfirmState();
+  }
+
+  function updateConfirmState() {
+    const otherFilled = rmState.reason !== 'other' ||
+      document.getElementById('rmodal-other-input').value.trim().length > 0;
+    confirmBtn.disabled = !(rmState.project && rmState.reason && otherFilled);
+  }
+
+  // ── render single-select list for modal dropdowns ──
+  function renderModalList(listEl, items, selectedId, onChange) {
+    listEl.innerHTML = '';
+    items.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'list-item' + (item.id === selectedId ? ' is-selected' : '');
+      div.innerHTML = `<span class="list-check"></span><span class="list-label">${item.name}</span>`;
+      div.addEventListener('click', () => {
+        onChange(item);
+        closeAllDropdowns();
+      });
+      listEl.appendChild(div);
+    });
+  }
+
+  function initModalDropdowns() {
+    // Project
+    const projDd   = document.querySelector('[data-dropdown="rm-project"]');
+    const projList = document.querySelector('[data-list="rm-project"]');
+    function renderProj() {
+      renderModalList(projList, RM_PROJECTS, rmState.project, item => {
+        rmState.project = item.id;
+        const lbl = projDd.querySelector('[data-label]');
+        lbl.textContent = item.name; lbl.classList.remove('muted');
+        renderProj(); updateConfirmState();
+      });
+    }
+    renderProj();
+
+    // To-do
+    const todoDd   = document.querySelector('[data-dropdown="rm-todo"]');
+    const todoList = document.querySelector('[data-list="rm-todo"]');
+    function renderTodo() {
+      renderModalList(todoList, RM_TODOS, rmState.todo, item => {
+        rmState.todo = item.id;
+        const lbl = todoDd.querySelector('[data-label]');
+        lbl.textContent = item.id ? item.name : 'Select to-do/job';
+        lbl.classList.toggle('muted', !item.id);
+        renderTodo(); updateConfirmState();
+      });
+    }
+    renderTodo();
+
+    // Reason
+    const reasonDd   = document.querySelector('[data-dropdown="rm-reason"]');
+    const reasonList = document.querySelector('[data-list="rm-reason"]');
+    const otherWrap  = document.getElementById('rmodal-other-wrap');
+    const otherInput = document.getElementById('rmodal-other-input');
+    otherInput.addEventListener('input', updateConfirmState);
+
+    function renderReason() {
+      renderModalList(reasonList, RM_REASONS, rmState.reason, item => {
+        rmState.reason = item.id;
+        const lbl = reasonDd.querySelector('[data-label]');
+        lbl.textContent = item.name; lbl.classList.remove('muted');
+        otherWrap.style.display = item.id === 'other' ? '' : 'none';
+        if (item.id !== 'other') otherInput.value = '';
+        renderReason(); updateConfirmState();
+        if (item.id === 'other') otherInput.focus();
+      });
+    }
+    renderReason();
+
+    // Wire triggers (reuse global dropdown engine)
+    ['rm-project','rm-todo','rm-reason'].forEach(id => {
+      const wrap    = document.querySelector(`[data-dropdown="${id}"]`);
+      const trigger = wrap?.querySelector('[data-trigger]');
+      if (trigger) trigger.addEventListener('click', e => {
+        e.stopPropagation(); toggleDropdown(wrap);
+      });
+    });
+  }
+
+  // ── open / close ─────────────────────────────────────
+  function openModal(dayIso) {
+    _pendingDate = dayIso;
+    rmState = { project: null, todo: null, reason: null };
+    // Reset labels
+    ['rm-project','rm-todo','rm-reason'].forEach(id => {
+      const lbl = document.querySelector(`[data-dropdown="${id}"] [data-label]`);
+      if (lbl) { lbl.classList.add('muted'); }
+    });
+    document.querySelector('[data-dropdown="rm-project"] [data-label]').textContent = 'Select project/work order';
+    document.querySelector('[data-dropdown="rm-todo"] [data-label]').textContent    = 'Select to-do/job';
+    document.querySelector('[data-dropdown="rm-reason"] [data-label]').textContent  = 'Select reason';
+    document.getElementById('rmodal-other-wrap').style.display = 'none';
+    document.getElementById('rmodal-other-input').value = '';
+    initModalDropdowns();
+    populateSummary(dayIso);
+    overlay.classList.add('is-open');
+  }
+
+  function closeModal() {
+    overlay.classList.remove('is-open');
+    closeAllDropdowns();
+  }
+
+  closeBtn.addEventListener('click', closeModal);
+  cancelBtn.addEventListener('click', closeModal);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+
+  const SCENARIO_MEMBERS = { 'm6': 'bg-instant', 'm7': 'bg-spinner', 'm8': 'bg-long', 'm9': 'bg-fail' };
+
+  function detectScenario(dayIso) {
+    const cbs = Array.from(document.querySelectorAll(
+      dayIso ? `.entry-cb[data-date="${dayIso}"]:checked` : '.entry-cb:checked'
+    ));
+    for (const [mid, scenario] of Object.entries(SCENARIO_MEMBERS)) {
+      if (cbs.some(cb => cb.dataset.memberId === mid)) return scenario;
+    }
+    return 'success';
+  }
+
+  confirmBtn.addEventListener('click', () => {
+    const projName = RM_PROJECTS.find(p => p.id === rmState.project)?.name;
+    const scenario = detectScenario(_pendingDate);
+    closeModal();
+
+    if (scenario === 'bg-fail') {
+      showToast('Reassignment failed', 'We couldn\'t process this change. Try again later.', 'error');
+      return;
+    }
+
+    if (scenario === 'bg-instant') {
+      showToast('Time entries reassigned', `Selected time entries were reassigned to <strong>${projName}</strong>.`);
+      return;
+    }
+
+    if (scenario === 'bg-spinner') {
+      showBgToast('Reassigning time entries…');
+      setTimeout(() => {
+        hideBgToast();
+        showToast('Time entries reassigned', `Selected time entries were reassigned to <strong>${projName}</strong>.`);
+      }, 4000);
+      return;
+    }
+
+    if (scenario === 'bg-long') {
+      showBgToast('Reassigning time entries…');
+      setTimeout(() => updateBgToast('This is taking longer than expected. We\'ll email you when it\'s done.'), 5000);
+      return;
+    }
+
+    // default success
+    showToast('Time entries reassigned', `Selected time entries were reassigned to <strong>${projName}</strong>.`);
+  });
+
+  // ── expose opener to batch bar click handler ──────────
+  window._openReassignModal = openModal;
+})();
+</script>
+
+<!-- ─── DELETE MODAL ────────────────────────────────── -->
+<div class="rmodal-overlay" id="dmodal-overlay" role="dialog" aria-modal="true" aria-labelledby="dmodal-title">
+  <div class="rmodal">
+
+    <div class="rmodal-header">
+      <span class="rmodal-title" id="dmodal-title">Delete time entries</span>
+      <button class="rmodal-close" id="dmodal-close" type="button" data-tooltip="Close"><span class="ms">close</span></button>
+    </div>
+
+    <div class="rmodal-body">
+
+      <p style="font-size:14px;color:var(--gray-900);font-weight:400;">This action cannot be undone.</p>
+
+      <!-- Summary card -->
+      <div class="rmodal-summary">
+        <div class="rmodal-summary-label">You're deleting:</div>
+        <div class="rmodal-summary-lines">
+          <p>Time entries: <span id="dms-entries">0</span></p>
+          <p>Projects: <span id="dms-projects">0</span></p>
+          <p>To-dos: <span id="dms-todos">0</span></p>
+          <p>Total hours: <span id="dms-hours">00:00:00</span></p>
+        </div>
+      </div>
+
+      <!-- Form fields -->
+      <div class="rmodal-fields">
+        <div class="rmodal-field">
+          <label class="rmodal-field-label" id="dm-reason-label">Reason</label>
+          <div class="dropdown" data-dropdown="dm-reason" style="width:100%;">
+            <button class="select-shell reason-shell" type="button" data-trigger aria-haspopup="dialog" aria-expanded="false">
+              <span class="select-value muted" data-label>Select reason</span>
+              <span class="select-icon ms">keyboard_arrow_down</span>
+            </button>
+            <div class="dropdown-panel" data-panel>
+              <div class="list" data-list="dm-reason"></div>
+            </div>
+          </div>
+          <div id="dmodal-other-wrap" style="display:none; margin-top:8px;">
+            <textarea
+              id="dmodal-other-input"
+              class="rmodal-other-input"
+              placeholder="Write the other reason"
+              maxlength="500"
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="rmodal-footer">
+      <button class="rmodal-cancel" id="dmodal-cancel" type="button">Cancel</button>
+      <button class="rmodal-confirm rmodal-confirm-delete" id="dmodal-confirm" type="button" disabled>Delete <span id="dmodal-cta-count">0</span> time entries</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────
+// DELETE MODAL
+// ─────────────────────────────────────────────────────
+(function initDeleteModal() {
+  const overlay    = document.getElementById('dmodal-overlay');
+  const closeBtn   = document.getElementById('dmodal-close');
+  const cancelBtn  = document.getElementById('dmodal-cancel');
+  const confirmBtn = document.getElementById('dmodal-confirm');
+
+  const DM_REASONS = [
+    { id: 'wrong_project',  name: 'Logged to wrong project'  },
+    { id: 'reassignment',   name: 'Team reassignment'         },
+    { id: 'project_rename', name: 'Project renamed/merged'    },
+    { id: 'correction',     name: 'Manual correction'         },
+    { id: 'other',          name: 'Other'                     },
+  ];
+
+  let dmState = { reason: null };
+  let _pendingDate = null;
+
+  function getCheckedForDate(dayIso) {
+    return Array.from(document.querySelectorAll(`.entry-cb[data-date="${dayIso}"]:checked`))
+      .filter(cb => cb.closest('.row-entry').dataset.projectMatch !== '0');
+  }
+
+  function fmtHMS(totalMins) {
+    const h = Math.floor(totalMins / 60);
+    const m = totalMins % 60;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00`;
+  }
+
+  function populateSummary(dayIso) {
+    const cbs = getCheckedForDate(dayIso);
+    const projects = new Set(cbs.map(cb => cb.closest('.row-entry').dataset.projectId)).size;
+    const todos    = new Set(cbs.map(cb => cb.closest('.row-entry').dataset.projectId + ':' + cb.dataset.memberId)).size;
+    const totalMins = cbs.reduce((s, cb) => s + parseInt(cb.dataset.minutes || 0), 0);
+    document.getElementById('dms-entries').textContent  = cbs.length;
+    document.getElementById('dms-projects').textContent = projects;
+    document.getElementById('dms-todos').textContent    = todos;
+    document.getElementById('dms-hours').textContent    = fmtHMS(totalMins);
+    document.getElementById('dmodal-cta-count').textContent = cbs.length;
+    updateConfirmState();
+  }
+
+  function updateConfirmState() {
+    const otherFilled = dmState.reason !== 'other' ||
+      document.getElementById('dmodal-other-input').value.trim().length > 0;
+    confirmBtn.disabled = !(dmState.reason && otherFilled);
+  }
+
+  function renderModalList(listEl, items, selectedId, onChange) {
+    listEl.innerHTML = '';
+    items.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'list-item' + (item.id === selectedId ? ' is-selected' : '');
+      div.innerHTML = `<span class="list-check"></span><span class="list-label">${item.name}</span>`;
+      div.addEventListener('click', () => { onChange(item); closeAllDropdowns(); });
+      listEl.appendChild(div);
+    });
+  }
+
+  function initDropdowns() {
+    const reasonDd    = document.querySelector('[data-dropdown="dm-reason"]');
+    const reasonList  = document.querySelector('[data-list="dm-reason"]');
+    const otherWrap   = document.getElementById('dmodal-other-wrap');
+    const otherInput  = document.getElementById('dmodal-other-input');
+    const reasonLabel = document.getElementById('dm-reason-label');
+    otherInput.addEventListener('input', updateConfirmState);
+
+    function renderReason() {
+      renderModalList(reasonList, DM_REASONS, dmState.reason, item => {
+        dmState.reason = item.id;
+        const lbl = reasonDd.querySelector('[data-label]');
+        lbl.textContent = item.name; lbl.classList.remove('muted');
+        otherWrap.style.display = item.id === 'other' ? '' : 'none';
+        if (item.id !== 'other') otherInput.value = '';
+        reasonLabel.innerHTML = item.id === 'other'
+          ? 'Reason <span class="required-star">*</span>'
+          : 'Reason';
+        renderReason(); updateConfirmState();
+        if (item.id === 'other') otherInput.focus();
+      });
+    }
+    renderReason();
+
+    const wrap    = document.querySelector('[data-dropdown="dm-reason"]');
+    const trigger = wrap?.querySelector('[data-trigger]');
+    if (trigger) trigger.addEventListener('click', e => { e.stopPropagation(); toggleDropdown(wrap); });
+  }
+
+  function openModal(dayIso) {
+    _pendingDate = dayIso;
+    dmState = { reason: null };
+    const lbl = document.querySelector('[data-dropdown="dm-reason"] [data-label]');
+    if (lbl) { lbl.textContent = 'Select reason'; lbl.classList.add('muted'); }
+    document.getElementById('dmodal-other-wrap').style.display = 'none';
+    document.getElementById('dmodal-other-input').value = '';
+    document.getElementById('dm-reason-label').textContent = 'Reason';
+    initDropdowns();
+    populateSummary(dayIso);
+    overlay.classList.add('is-open');
+  }
+
+  function closeModal() {
+    overlay.classList.remove('is-open');
+    closeAllDropdowns();
+  }
+
+  closeBtn.addEventListener('click', closeModal);
+  cancelBtn.addEventListener('click', closeModal);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+
+  confirmBtn.addEventListener('click', () => {
+    const n = parseInt(document.getElementById('dmodal-cta-count').textContent);
+    closeModal();
+    showToast('Time entries deleted', `${n} time ${n === 1 ? 'entry was' : 'entries were'} successfully deleted.`);
+  });
+
+  window._openDeleteModal = openModal;
+})();
+</script>
+
+<div id="toast-container"></div>
+<div id="bg-toast"><span id="bg-toast-icon">autorenew</span><span id="bg-toast-text"></span></div>
+<div id="js-tooltip"></div>
+<script>
+function showToast(title, body, type) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast' + (type === 'error' ? ' toast-error' : '');
+  toast.innerHTML = `
+    <div class="toast-header">
+      <span class="toast-title">${title}</span>
+      <button class="toast-close" type="button">close</button>
+    </div>
+    <p class="toast-body">${body}</p>
+  `;
+  container.appendChild(toast);
+
+  requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('is-visible')));
+
+  function dismiss() {
+    clearTimeout(timer);
+    toast.classList.remove('is-visible');
+    toast.classList.add('is-hiding');
+    setTimeout(() => toast.remove(), 220);
+  }
+
+  const timer = setTimeout(dismiss, 4000);
+  toast.querySelector('.toast-close').addEventListener('click', dismiss);
+}
+
+function showBgToast(text) {
+  const el = document.getElementById('bg-toast');
+  document.getElementById('bg-toast-text').textContent = text;
+  el.classList.add('is-visible');
+}
+function updateBgToast(text) {
+  document.getElementById('bg-toast-text').textContent = text;
+}
+function hideBgToast() {
+  document.getElementById('bg-toast').classList.remove('is-visible');
+}
+</script>
+<script>
+(function() {
+  const tip = document.getElementById('js-tooltip');
+  let hideTimer;
+
+  document.addEventListener('mouseover', e => {
+    const el = e.target.closest('[data-tooltip]');
+    if (!el) return;
+    clearTimeout(hideTimer);
+    const text = el.dataset.tooltip;
+    if (!text) return;
+    tip.textContent = text;
+    const r = el.getBoundingClientRect();
+    tip.style.left = (r.left + r.width / 2) + 'px';
+    tip.style.top  = (r.top - 8) + 'px';
+    tip.style.transform = 'translateX(-50%) translateY(-100%)';
+    tip.style.opacity = '1';
+  });
+
+  document.addEventListener('mouseout', e => {
+    const el = e.target.closest('[data-tooltip]');
+    if (!el) return;
+    hideTimer = setTimeout(() => { tip.style.opacity = '0'; }, 80);
+  });
+})();
+</script>
+</div><!-- /shell-content -->
+
+<!-- Shell library (top bar + sidebar + collapse/expand) -->
+<script src="assets/hubstaff-shell.js"></script>
+<script src="assets/layout.js"></script>
+
+<!-- ── Highlight changes — remove this block + the <style id="highlight-changes-css"> above to disable ── -->
+<div class="highlight-tooltip" id="highlight-tooltip" hidden></div>
+<script id="highlight-changes">
+(function () {
+  const tooltip = document.getElementById('highlight-tooltip');
+
+  // ── Toggle ──────────────────────────────────────────────────────
+  const toggleEl = document.createElement('div');
+  toggleEl.className = 'silent-toggle';
+  toggleEl.setAttribute('role', 'switch');
+  toggleEl.setAttribute('aria-checked', 'false');
+  toggleEl.setAttribute('aria-label', 'Highlight changes');
+  toggleEl.setAttribute('tabindex', '0');
+  toggleEl.innerHTML = '<div class="silent-toggle__track"><div class="silent-toggle__thumb"></div></div><span class="silent-toggle__label">Highlight changes</span>';
+
+  function applyToggle(on) {
+    toggleEl.classList.toggle('is-on', on);
+    toggleEl.setAttribute('aria-checked', String(on));
+    document.body.classList.toggle('highlight-mode', on);
+    if (!on) tooltip.hidden = true;
+  }
+
+  toggleEl.addEventListener('click', () => applyToggle(!toggleEl.classList.contains('is-on')));
+  toggleEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); applyToggle(!toggleEl.classList.contains('is-on')); }
+  });
+
+  // Inject right after the timer in the shell topbar
+  const timer = document.querySelector('#hs-topbar .hs-timer');
+  if (timer) {
+    const divider = document.createElement('div');
+    divider.className = 'hs-topbar-divider';
+    timer.insertAdjacentElement('afterend', toggleEl);
+    timer.insertAdjacentElement('afterend', divider);
+  }
+
+  // ── Tooltip ─────────────────────────────────────────────────────
+  document.addEventListener('mousemove', e => {
+    if (!document.body.classList.contains('highlight-mode')) return;
+    const target = e.target.closest('[data-change]');
+    if (!target) { tooltip.hidden = true; return; }
+
+    tooltip.textContent = target.dataset.change;
+    tooltip.hidden = false;
+
+    const pad = 14;
+    const tw = tooltip.offsetWidth;
+    const th = tooltip.offsetHeight;
+    let x = e.clientX + pad;
+    let y = e.clientY + pad;
+    if (x + tw > window.innerWidth - 8)  x = e.clientX - tw - pad;
+    if (y + th > window.innerHeight - 8) y = e.clientY - th - pad;
+    tooltip.style.left = x + 'px';
+    tooltip.style.top  = y + 'px';
+  });
+
+  document.addEventListener('mouseleave', () => { tooltip.hidden = true; });
+})();
+</script>
+
+</body>
+</html>
