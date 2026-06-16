@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hubstaff — Edit &amp; approve</title>
+  <title>Hubstaff — Time logged</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&family=Roboto:wght@200;400;500;600&display=swap" rel="stylesheet">
@@ -90,7 +90,7 @@
 
   <!-- Title + actions -->
   <div class="page-title-row">
-    <h1 class="page-title">Edit &amp; approve</h1>
+    <h1 class="page-title">Time logged</h1>
     <div class="page-actions">
       <button class="btn btn-primary btn-32">
         <span class="ms" style="font-size:16px">add</span>Add time
@@ -186,11 +186,6 @@
     </div>
   </div>
 
-  <!-- Tabs -->
-  <div class="tabs-row">
-    <div class="tab is-active">Time Logged</div>
-    <div class="tab">Timesheets</div>
-  </div>
 
 </div>
 
@@ -1104,7 +1099,6 @@ function shiftDate(days) {
         <td>${dash}</td>
         <td>${dash}</td>
         <td><a class="ts-link">Sun, Nov 4 –<br>Sat, Nov 17</a></td>
-        <td><span class="pill pill-open">Open</span></td>
         <td><button class="btn-actions">Actions <span class="ms">expand_more</span></button></td>
       </tr>`;
   }
@@ -1135,7 +1129,6 @@ function shiftDate(days) {
         <td><div class="cell-time-stack" data-change="Changed — Time column now shows total duration on top and the time range below (e.g., 7:00 am – 10:00 am) in the same cell."><span class="cell-num">${fmtDurationHMS(entry.minutes)}</span><span class="cell-time-range">${fmtTimeAmPm(entry.from)} – ${fmtTimeAmPm(entry.to)}</span></div></td>
         <td>${entry.activityPct}%</td>
         <td>${entry.idlePct > 0 ? entry.idlePct + '%' : '<span class="dash">--</span>'}</td>
-        <td><span class="dash">--</span></td>
         <td><span class="dash">--</span></td>
         <td><span class="dash">--</span></td>
         <td><span class="dash">--</span></td>
@@ -1176,7 +1169,6 @@ function shiftDate(days) {
               <col class="col-holiday">
               <col class="col-pto">
               <col class="col-timesheet">
-              <col class="col-status">
               <col class="col-actions">
             </colgroup>
             <thead>
@@ -1190,7 +1182,6 @@ function shiftDate(days) {
                 <th>Holiday</th>
                 <th>PTO</th>
                 <th>Timesheet</th>
-                <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>

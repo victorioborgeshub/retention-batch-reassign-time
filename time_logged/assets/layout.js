@@ -1,6 +1,6 @@
 HubstaffShell.init({
   activeItem:    'timesheets',
-  activeSubItem: 'Edit & approve',
+  activeSubItem: 'Time logged',
   logoHref:      '#',
 });
 
